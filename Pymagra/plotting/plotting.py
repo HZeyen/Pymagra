@@ -417,6 +417,7 @@ class plot(QMainWindow, Ui_MainWindow):
         None.
 
         """
+        self.legend = []
         # Define clip paths for both sensors, searching for every line maximum and
         #    minimum coordinates
         xmin = x.min()
@@ -612,7 +613,6 @@ class plot(QMainWindow, Ui_MainWindow):
         y = []
         v1 = []
         v2 = []
-        self.legend = []
         self.grad_data = data["grad_data"]
         if data["type"] == "magnetic":
             self.unit = "nT"
@@ -1531,7 +1531,7 @@ class plot(QMainWindow, Ui_MainWindow):
                             horizontalalignment="left",
                             transform=cbar.ax.transAxes,
                         )
-                    #                    ax_float[2].set_aspect('equal', adjustable='box', anchor=anchor)
+                    #       ax_float[2].set_aspect('equal', adjustable='box', anchor=anchor)
                     ax_float[2].set_aspect("equal", adjustable="box")
         fig_float.show()
         return fig_float, ax_float

@@ -190,7 +190,7 @@ def read_geography_file(file):
               - "y" : list of floats, North coordinate of points describing the line
 
     """
-    with open(file, "r") as fi:
+    with open(file, "r", encoding="utf-8") as fi:
         ll = fi.readlines()
     geography = {}
     il = 0
@@ -452,7 +452,7 @@ class Data:
         self.d_sensor = float(results[1])
         self.line_declination = float(results[2])
         self.n_blocks += 1
-        with open(file, "r") as fi:
+        with open(file, "r", encoding="utf-8") as fi:
             lines = fi.readlines()
         nums = lines[1].split()
         nx = int(nums[0])
@@ -566,7 +566,7 @@ class Data:
             sys.exit()
         self.h_sensor = float(results[0])
         self.line_declination = float(results[1])
-        with open(infile, "r") as fi:
+        with open(infile, "r", encoding="utf-8") as fi:
             lines = fi.readlines()
         # Read header
         il = -1
@@ -697,7 +697,7 @@ class Data:
         height = []
         v = []
         c2 = 0
-        with open(file, "r") as fi:
+        with open(file, "r", encoding="utf-8") as fi:
             lines = fi.readlines()
         for _, line in enumerate(lines):
             if "/" in line:
@@ -910,7 +910,7 @@ class Data:
         None.
 
         """
-        with open(file, "w") as fo:
+        with open(file, "w", encoding="utf-8") as fo:
             fo.write(
                 "           X           Y           Z     TOP_RDG  "
                 + "BOTTOM_RDG    VRT_GRAD\n"

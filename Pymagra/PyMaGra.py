@@ -70,12 +70,12 @@ from PyQt5 import QtWidgets, QtCore
 # from PyQt5.QtWidgets import (QRadioButton, QButtonGroup)
 # s_path = r"E:/Sources_2010/Python_programs/Pymagra"
 from .in_out import io
-from .plotting import plot
-from .plotting import newWindow
+from .plotting.plotting import plot
+from .plotting.plotting import newWindow
 
 # from .in_out.geometrics import Geometrics as geom
-from .utilities import Utilities
-from .in_out import dialog
+from .utilities.utilities import Utilities
+from .in_out.dialog import dialog
 
 # from .utilities import Utilities
 # from .plotting import plot

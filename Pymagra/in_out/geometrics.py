@@ -8,7 +8,7 @@ Last modified on Mon Oct 30 2023
 
 import numpy as np
 from PyQt5 import QtWidgets
-from ..utilities import Utilities
+from ..utilities.utilities import Utilities
 
 
 class Geometrics:
@@ -372,7 +372,7 @@ class Geometrics:
         ntracks = self.n_lines - 1
 
         # read all lines in magnetic data file
-        with open(infile, "r") as fh:
+        with open(infile, "r", encoding="utf-8") as fh:
             ll = fh.readlines()
         try:
             _ = int(ll[0].split()[0])
@@ -431,10 +431,12 @@ class Geometrics:
                     # print(f"nline: {ntracks}: nseg: "+\
                     #       f"{len(self.segments[ntracks]['mark_samples'])-1},"+\
                     #       f" ndseg: {ndat_segment}")
-                    # If last mark had code 36, a new line was started and it is the first mark after start,
-                    #    The number of measurement steps is 1 less than the number of data points, if not,
-                    #    both are equal. This means that it is supposed that the mark was pressed at
-                    #    the position of the measurement just before the mark
+                    # If last mark had code 36, a new line was started and it is
+                    #    the first mark after start. The number of measurement steps
+                    #    is 1 less than the number of data points, if not,
+                    #    both are equal. This means that it is supposed that the
+                    #    mark was pressed atthe position of the measurement just
+                    #    before the mark
                     if nstart:
                         dx = (xx - xx0) / (ndat_segment - 1)
                         dy = (yy - yy0) / (ndat_segment - 1)
@@ -716,7 +718,7 @@ class Geometrics:
             month = self.month[0]
         if not year:
             year = self.year[0]
-        with open(file, "w") as fh:
+        with open(file, "w", encoding="utf-8") as fh:
             fh.write("99 0 0\n")
             mark = 1
             izero = 0
@@ -1120,7 +1122,7 @@ class Geometrics:
         if not year:
             year = self.year[0]
 
-        with open(infile, "r") as fh:
+        with open(infile, "r", encoding="utf-8") as fh:
             lines = fh.readlines()
         nlines = len(lines)
         self.year_base = list(self.year_base)
@@ -1203,7 +1205,7 @@ class Geometrics:
             Name of file where to write the base station data.
 
         """
-        with open(outfile, "w") as fo:
+        with open(outfile, "w", encoding="utf-8") as fo:
             for i, b in enumerate(self.base):
                 if np.isnan(b):
                     continue

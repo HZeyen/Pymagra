@@ -472,7 +472,7 @@ class Utilities:
             # io.base.second_base = self.second_base
             # io.base.time_base = self.time_base
             # io.base.base = self.base
-            with open("temp.stn", "w") as fo:
+            with open("temp.stn", "w", encoding="utf-8") as fo:
                 for i, b in enumerate(self.base):
                     if np.isnan(b):
                         continue
