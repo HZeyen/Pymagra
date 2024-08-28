@@ -1,0 +1,10 @@
+name: pymagra
+channels:
+  - conda-forge
+dependencies:
+  - sphinx
+  - nbsphinx
+  - pydata-sphinx-theme
+  - numpydoc
+  - nbsphinx-link
+  - myst-parser

@@ -1,0 +1,461 @@
+Pymagra.plotting.plotting
+=========================
+
+.. py:module:: Pymagra.plotting.plotting
+
+.. autoapi-nested-parse::
+
+   Last modified on Aug 26, 2024
+
+   @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
+            Université Paris-Saclay, France
+
+   Contains the following classes for plotting purposes of program PyMaGra:
+
+       - plot
+       - newWindow
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   Pymagra.plotting.plotting.plot
+   Pymagra.plotting.plotting.newWindow
+
+
+Module Contents
+---------------
+
+.. py:class:: plot(main)
+
+   Bases: :py:obj:`QMainWindow`, :py:obj:`Ui_MainWindow`
+
+
+   Class for plotting in PyMaGra
+
+   Depends on the following packages:
+
+       - numpy
+       - PyQt5
+       - matplotlib
+
+   Needed private files:
+
+       - Magnetics.ui (user interface, produced with QtDesigner)
+
+   Contains the following methods:
+
+       - __init__
+       - setClipPath
+       - set_geography_flag
+       - toggle_geography_flag
+       - plot_geography
+       - plot_lineaments
+       - plot_triang
+       - plot_image
+       - addMPL
+       - rmMPL
+       - plotFloating
+
+
+
+   .. py:attribute:: fig
+
+
+   .. py:attribute:: main
+
+
+   .. py:attribute:: grid_flag
+      :value: True
+
+
+
+   .. py:attribute:: plotLin_flag
+      :value: False
+
+
+
+   .. py:attribute:: geography_flag
+      :value: False
+
+
+
+   .. py:attribute:: legend
+      :value: []
+
+
+
+   .. py:attribute:: grad_data
+      :value: []
+
+
+
+   .. py:attribute:: unit
+      :value: 'nT'
+
+
+
+   .. py:attribute:: bar_or
+      :value: 'vertical'
+
+
+
+   .. py:attribute:: nticks
+      :value: 10
+
+
+
+   .. py:attribute:: axfont
+      :value: 20
+
+
+
+   .. py:method:: setClipPath(x, y)
+
+      define clip path
+
+      :param x: contains all x-coordinates of data points.
+      :type x: numpy float array
+      :param y: contains all y-coordinates of data points.
+      :type y: numpy float array
+
+      :rtype: PATH matplotlib.path
+
+
+
+   .. py:method:: set_geography_flag(option)
+
+      Set flag to plot geography information or not to value "option".
+
+      :param option: If True, geography information is plotted.
+      :type option: bool
+
+
+
+   .. py:method:: toggle_geography_flag()
+
+      Inverse value of flag to plot geography information or not.
+
+      No input or output parameters
+
+
+
+
+   .. py:method:: plot_geography(ax)
+
+      Plot geography information into axis "ax".
+
+      :param ax:
+      :type ax: Matplotlib.Axis object
+      :param Geography information is stored in class Main as dictionary with entries:
+      :param - "type":
+      :type - "type": may be "point" or "line"
+      :param - "x":
+      :type - "x": x coordinate(s) of point or line
+      :param - "y":
+      :type - "y": y coordinate(s) of point or line
+
+
+
+   .. py:method:: plot_lineaments(ax)
+
+      Plot lineaments picked from tilt maps into axis "ax".
+
+      :param ax:
+      :type ax: Matplotlib.Axis object
+      :param Lineament information is stored as dictionary with entries:
+      :param - "type":
+      :type - "type": may be "gravity" or "magnetic"
+      :param - "x":
+      :type - "x": x coordinate(s) of point or line
+      :param - "y":
+      :type - "y": y coordinate(s) of point or line
+
+
+
+   .. py:method:: plot_north(ax, angle, pos)
+
+      Plot North arrow into map
+      It is supposed that the map is drawn with set_aspect="equal"
+
+      :param ax: axis where to plot the North arrow.
+      :type ax: matplotlib axes object
+      :param angle: Angle in degrees from N to E (geological sense, not mathematical).
+      :type angle: float
+      :param pos: string of two characters indicationg the position of the arrow.
+                  One character may be "t" or "b" for top or bottom of the plot
+                  The other letter may be "l" or "r" for left or right
+                  The order of the two characters as well as capitalization has no
+                  importance.
+      :type pos: str
+
+      :rtype: None.
+
+
+
+   .. py:method:: plot_sensor_triang(ax, x, y, s, vmin, vmax, percent, cmap, xlabel, ylabel, title, cbar_title, dec=0.0)
+
+      Plot map of one sensor by triangulation
+
+      :param ax: Axis where to plot the map
+      :type ax: Matplotlib axis
+      :param x: X-coordinates of data
+      :type x: Numpy 1D float array
+      :param y: Y-coordinates of data
+      :type y: Numpy 1D float array
+      :param s: Values [nT or mGal]
+      :type s: Numpy 1D float array
+      :param vmin: Value for lower end of color scale [nT or mGal]
+                   If vmin==vmax, the color scale is calculated automatically based on
+                   quantiles (see "percent")
+      :type vmin: float
+      :param vmax: Value for upper end of color scale [nT or mGal]
+      :type vmax: float
+      :param percent: Scaling of color scale. Maximum value is percentile (1-percent),
+                      minimum value for percentile percent. This is only used if mincol==maxcol.
+      :type percent: float
+      :param cmap: Color map to be used
+      :type cmap: Matplotlib color map
+      :param xlabel: Label for x-axis
+      :type xlabel: str
+      :param ylabel: Label for y-axis
+      :type ylabel: str
+      :param title: Title of map
+      :type title: str
+      :param cbar_title: Text for color bar
+      :type cbar_title: str
+      :param dec: Direction of the measurement lines with respect to magnetic North
+                  in degrees, measured from N to E
+      :type dec: float (optional, default : 0.)
+
+      :rtype: None.
+
+
+
+   .. py:method:: plot_triang(data, title='Measured magnetic data', xlabel='Easting', ylabel='Northing', percent=0.01, c='rainbow', mincol1=0.0, maxcol1=0.0, mincol2=0.0, maxcol2=0.0, mincolg=0.0, maxcolg=0.0, grad_flag=False)
+
+      Plot maps of not interpolated data (stn format) of both sensors using
+      tricontourf
+
+      :param data: Each entry is itself a dictionary containing the following entries:
+
+                   - "s1": Numpy float array with data of sensor 1
+                   - "s2": Numpy float array with data of sensor 2
+                     If only data of one single sensor were measured, "s2" contains only one zero.
+                   - "x":  Numpy float array with E-W coordinates of data points
+                   - "y":  Numpy float array with N-S coordinates of data points
+                   - "grad_flag" bool. True if 2 sensors were used, False if only one sensor
+                   - "mask": bool, True if line should be plotted, False if excluded from plotting
+      :type data: dictionary with one entry per line, key = number of line.
+      :param title: Plot title for both sensor polts (the text "sensor n" is automatically
+                    added, n being sensor numnber). The default is "Measured magnetic data".
+      :type title: str, optional
+      :param xlabel: Text for x-axis. The default is "Easting".
+      :type xlabel: str, optional
+      :param ylabel: Text for y-axis. The default is "Northing".
+      :type ylabel: str, optional
+      :param percent: Scaling of color scale. Maximum value is percentile (1-percent),
+                      minimum value for percentile percent. The default is 0.01.
+                      This is only used if mincol==maxcol.
+      :type percent: float, optional
+      :param mincol1: value for lower end of color scale for sensor 1 [nT]
+      :type mincol1: float, optional
+      :param maxcol1: value for upper end of color scale for sensor 1 [nT]
+                      If mincol1==maxcol1, the color scale is calculated automatically based on
+                      quantiles (see "percent")
+      :type maxcol1: float, optional
+      :param mincol2: value for lower end of color scale for sensor 2 [nT]
+      :type mincol2: float, optional
+      :param maxcol2: value for upper end of color scale for sensor 2 [nT]
+                      If mincol2==maxcol2, the color scale is calculated automatically based on
+                      quantiles (see "percent")
+      :type maxcol2: float, optional
+      :param mincolg: value for lower end of color scale for vertical gradient [nT/m]
+      :type mincolg: float, optional
+      :param maxcolg: value for upper end of color scale for vertical gradient [nT/m]
+                      If mincolg==maxcolg, the color scale is calculated automatically based on
+                      quantiles (see "percent")
+      :type maxcolg: float, optional
+      :param c: Color map to be used. The default is "rainbow".
+      :type c: str, optional
+      :param grad_flag: if True, 3 plots are shown on the screen: Sensor1, sensor2 and gradient.
+                        if False only the two sensors are plotted
+      :type grad_flag: bool, optional, default: False
+
+      :returns: * **fig** (*matplotlib.figure*) -- Figure used for plot.
+                * **ax** (*matplotlib.axis*) -- List of axes used for plots. ax has two entrances, one for each sensor
+
+
+
+   .. py:method:: plot_sensor_image(ax, x, y, s, vmin, vmax, percent, cmap, xlabel, ylabel, title, cbar_title, dec=0.0)
+
+      Plot map of one sensor by triangulation
+
+      :param ax: Axis where to plot the map
+      :type ax: Matplotlib axis
+      :param x: X-coordinates of data columns
+      :type x: Numpy 1D float array
+      :param y: Y-coordinates of data rows
+      :type y: Numpy 1D float array
+      :param s: Values [nT or mGal] on a regular grid
+      :type s: Numpy 2D float array
+      :param vmin: Value for lower end of color scale [nT or mGal]
+                   If vmin==vmax, the color scale is calculated automatically based on
+                   quantiles (see "percent")
+      :type vmin: float
+      :param vmax: Value for upper end of color scale [nT or mGal]
+      :type vmax: float
+      :param percent: Scaling of color scale. Maximum value is percentile (1-percent),
+                      minimum value for percentile percent. This is only used if mincol==maxcol.
+      :type percent: float
+      :param cmap: Color map to be used
+      :type cmap: Matplotlib color map
+      :param xlabel: Label for x-axis
+      :type xlabel: str
+      :param ylabel: Label for y-axis
+      :type ylabel: str
+      :param title: Title of map
+      :type title: str
+      :param cbar_title: Text for color bar
+      :type cbar_title: str
+      :param dec: Direction of the measurement lines with respect to magnetic North
+                  in degrees, measured from N to E
+      :type dec: float (optional, default : 0.)
+
+      :rtype: None.
+
+
+
+   .. py:method:: plot_image(title='Measured magnetic data', xlabel='Easting', ylabel='Northing', percent=0.01, c='rainbow', mincol1=0, maxcol1=0, mincol2=0.0, maxcol2=0.0, mincolg=0.0, maxcolg=0.0, grad_flag=False, dec=0.0)
+
+      Plot maps of interpolated data of both sensors using imshow
+
+      :param title: Plot title for both sensor polts (the text "sensor n" is automatically
+                    added, n being sensor numnber). The default is "Measured magnetic data".
+      :type title: str, optional
+      :param xlabel: Text for x-axis. The default is "Easting".
+      :type xlabel: str, optional
+      :param ylabel: Text for y-axis. The default is "Northing".
+      :type ylabel: str, optional
+      :param percent: Scaling of color scale. Maximum value is percentile (1-percent),
+                      minimum value for percentile percent. The default is 0.01.
+      :type percent: float, optional
+      :param mincol1: value for lower end of color scale for sensor 1 [nT]
+      :type mincol1: float, optional
+      :param maxcol1: value for upper end of color scale for sensor 1 [nT]
+                      If mincol1==maxcol1, the color scale is calculated automatically based on
+                      quantiles (see "percent")
+      :type maxcol1: float, optional
+      :param mincol2: value for lower end of color scale for sensor 2 [nT]
+      :type mincol2: float, optional
+      :param maxcol2: value for upper end of color scale for sensor 2 [nT]
+                      If mincol2==maxcol2, the color scale is calculated automatically based on
+                      quantiles (see "percent")
+      :type maxcol2: float, optional
+      :param mincolg: value for lower end of color scale for vertical gradient [nT/m]
+      :type mincolg: float, optional
+      :param maxcolg: value for upper end of color scale for vertical gradient [nT/m]
+                      If mincolg==maxcolg, the color scale is calculated automatically based on
+                      quantiles (see "percent")
+      :type maxcolg: float, optional
+      :param c: Color map to be used. The default is "rainbow".
+      :type c: str, optional
+      :param grad_flag: if True, 3 plots are shown on the screen: Sensor1, sensor2 and gradient.
+                        if False only the two sensors are plotted
+      :type grad_flag: bool, optional, default: False
+      :param dec: Y direction with respect to geographic north (measured from N to E)
+      :type dec: float
+
+      :returns: * **fig** (*matplotlib.figure*) -- Figure used for plot.
+                * **ax** (*matplotlib.axis*) -- List of axes used for plots. ax has two entrances, one for each sensor
+
+
+
+   .. py:method:: addMPL(fig)
+
+      Add widget to actual Figure
+      Input: fig is the actually used Figure (matplotlib.figure.Figure object)
+
+
+
+   .. py:method:: rmMPL()
+
+      Remove widget from actual Figure
+
+
+
+   .. py:method:: plotFloating(data, x, y, wtitle='', sizeh=800, sizev=500, mincol=0, maxcol=0, percent=0, c='rainbow', ptitle='', xlabel='', ylabel='', clabel='')
+
+      Plot one or several 2D arrays into floating window
+
+      :param data: Data to be plotted.
+                   The array my be 2D or 3D. If 3D, it is supposed that several figures
+                   should be plotted into the same window in different frames.
+                   If more than one plot is to be done, the thrid dimension contains
+                   the different data sets. Every data set must be 2D. Several data sets
+                   may be concatenated into data with the following commands:
+
+                   - data = data1.reshape(nr,nc,1)
+                   - data = np.concatenate((data,data2.reshape(nr,nc,1)),axis=2)
+
+                   data1 and data2 are arrays with shape (nr,nc) defined on regular grids.
+      :type data: numpy array
+      :param x: Positions of the columns
+      :type x: numpy 1D float array
+      :param y: Positions of the rows
+      :type y: numpy 1D float array
+      :param wtitle: Title of floating window
+      :type wtitle: str optional, default: empty string
+      :param sizeh: horizontal size of floating window.
+      :type sizeh: float optional,default: 800
+      :param sizev: vertical size of floating window
+      :type sizev: float optional, default: 500
+      :param mincol: Minimum value of color scale
+      :type mincol: float optional, default: 0
+      :param maxcol: Maximum value of color scale.
+                     If mincol == maxcol,  and percent == 0, the limits of the color
+                     scale are minimum and maximum values of the data.
+      :type maxcol: float optional,  default: 0
+      :param percent: If >0, mincol and maxcol are calculated as quantiles (percent, 1-percent).
+      :type percent: float optional:
+      :param c: color scale to be used.
+      :type c: str optional, default: "rainbow"
+      :param ptitle: May be a single string or a list of strings, where the length of the
+                     list must correspond to the length of the third dimension of data.
+      :type ptitle: str, optional, default: empty string
+      :param xlabel: Similar as ptitle for lables of horizontal axis
+      :type xlabel: str, optional
+      :param ylabel: Similar as ptitle for lables of vertical axis
+      :type ylabel: str, optional
+      :param clabel: Similar as ptitle for lables of color bars
+      :type clabel: str, optional
+
+      :returns: **fig_float,ax_float**
+      :rtype: Matplot values of figure and axes
+
+
+
+.. py:class:: newWindow(title, xsize=1800, ysize=1200)
+
+   Bases: :py:obj:`PyQt5.QtWidgets.QWidget`
+
+
+   This "window" is a QWidget. If it has no parent, it will appear as a
+   free-floating window.
+
+
+   .. py:attribute:: fig
+
+
+   .. py:attribute:: layout
+
+
+   .. py:attribute:: canvas
+
+
+   .. py:attribute:: toolbar
+
+
