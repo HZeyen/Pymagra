@@ -1,7 +1,7 @@
-build
 _build
 .cache
 dist
 doc
 .ipynb_checkpoints
 __pycache__
+zeyen
