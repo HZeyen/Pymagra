@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Sep 13 2023
-last modified on Aug 14, 2024
+last modified on Aug 28, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
          University Paris-Saclay, France
@@ -27,7 +26,6 @@ Contains the following class:
 
 """
 
-# 7import sys
 import os
 from copy import deepcopy
 from datetime import datetime, date
@@ -37,49 +35,13 @@ from matplotlib.ticker import AutoMinorLocator
 from matplotlib import colors
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from sklearn.linear_model import LinearRegression as LR
-# The next two lines may have to be modified:
-#  sys_path is the folder where all python program files are located
-#  dir0 is the folder where the data are located
-
-# Paths on HZ computer
-# sys_path = r"E:/Sources_2010/Python_programs/"
-# dir0 = r"D:/Tadjikistan/ZolIZard/"
-# dir0 = r"E:/Daten/Magnetics/Test_Campus_haut"
-# dir0 = r"E:/Daten/Fontaines_Salées_BRGM"
-# dir0 = r"E:/Documents/Cours/Stages/M1/2022-23/Magnetics/2022-09-20_day2_field5"
-# dir0 = r"D:/Documents/Cours/Stages/M1/2023-24/Magnetics/2023-09-26"
-# dir0 = r"E:/Seg2Dat/Garchy sismique 2024/Magnetisme"
-
-# Example of paths for programs and data on department desktop
-# sys_path = r"C:/Users/Utilisateur/Desktop/Geophysique/Sismique"
-# dir0 = r"C:/Users/Utilisateur/Desktop/Geophysique/magnetique"
-
-# Example of paths for Linux
-# sys_path = r"/home/zeyen/src/Python"
-# dir0 = r"/home/zeyen/magnetics"
-
-# if sys_path not in sys.path:
-#    sys.path.append(sys_path)
-
 import numpy as np
-
-# import matplotlib.pyplot as plt
 from PyQt5 import QtWidgets, QtCore
-
-# from PyQt5.QtCore import Qt
-# from PyQt5.QtWidgets import (QRadioButton, QButtonGroup)
-# s_path = r"E:/Sources_2010/Python_programs/Pymagra"
 from .in_out import io
 from .plotting.plotting import plot
 from .plotting.plotting import newWindow
-
-# from .in_out.geometrics import Geometrics as geom
 from .utilities.utilities import Utilities
 from .in_out.dialog import dialog
-
-# from .utilities import Utilities
-# from .plotting import plot
-
 
 class Main(QtWidgets.QWidget):
     """
@@ -126,6 +88,7 @@ class Main(QtWidgets.QWidget):
     reducePole : Reduce magnetic data to the pole
     log_spect : Calculate lograrithmic spectrum of a data series
     fit2lines : Fit two slopes to a data series
+    min_max : Search all local minima and maxima in a vector
     spector_line : Fit lines to lograithmic spectrum and calculate source depth
     spector : Calculate 1D source depths from data spectrum
     spector2D : Calculate 1D source depths from data spectrum on a 2D grid
@@ -135,7 +98,6 @@ class Main(QtWidgets.QWidget):
     followLine : Follow the cursor and plot a straight line
     eventFilter : (TODO) Event filter for keyboard strokes
     Handler : Should handle exeptions - not really working
-    dialog : Wrapper for general dialog interface (calls class Dialog)
     save_lineaments : Saves measured data lineaments into file
     closeApp : Close application in an ordered way
     """
@@ -408,6 +370,17 @@ class Main(QtWidgets.QWidget):
                 self.w.fill.setEnabled(True)
                 self.w.plotGradient.setEnabled(False)
                 self.w.poleReduction.setEnabled(True)
+            elif self.file_types[i] == "MGWIN":
+                self.dat[-1].read_txt(f)
+                if self.dat[-1]["grad_data"]:
+                    self.gradient_flag = True
+                    self.w.plotGradient.setEnabled(True)
+                else:
+                    self.gradient_flag = False
+                    self.w.plotGradient.setEnabled(False)
+                self.w.fill.setEnabled(True)
+                if self.data_types[i] == "magnetic":
+                    self.w.poleReduction.setEnabled(True)
             self.n_blocks += 1
             self.dat[-1].data["type"] = self.data_types[i]
             if "magnetic" in self.data_types:
@@ -1577,7 +1550,7 @@ class Main(QtWidgets.QWidget):
             print("\nJustification cancelled")
             return
         self.treatments["justify_Gauss"] = True
-        self.w.justify_lines_gaussian(justify, local)
+        self.u.justify_lines_gaussian(justify, local)
         self.plotActual(self.dat[self.actual_plotted_file].data)
 
     def interpol(self):
@@ -1876,25 +1849,26 @@ class Main(QtWidgets.QWidget):
         a maximum is always followed by a minimum and vice versa. If several local
         maxima follow each other (i.e. no wide enough local minimum exists between
         them), the program searches the strongest one of the subsequent maxima or, if
-        several equal maximum values exists, takes as position of the maximum the
+        several equal maximum values exist, it takes as position of the maximum the
         center point between those multiple maxima (again for saturated curves).
 
         Parameters
         ----------
-        data, half_width
-        data: data vector to be analysed (Defult value: 3)
-        half_width: integer value giving the number of samples analyzed to both \
-                    sides of every data sample.
+        data : 1D numpy float array
+            Data vrctor to be analysed
+        half_width : int, optional (default: 3)
+            Number of samples analyzed to all ides of every data sample.
 
         Returns
         -------
-        max_pos, max_val, min_pos, min_val
-        max_pos: integer vector with all position numbers where there is a \
-                 relative maximum in vector "data"
-        max_val: values at these positions
-        min_pos: integer vector with all position numbers where there is a \
-                 relative minimum in vector "data"
-        min_val: values at these positions
+        max_pos: 1D numpy int array
+            All position numbers where there is a relative maximum in vector "data".
+        max_val: 1D numpy float array
+            Values at these positions
+        min_pos: 1D numpy int array
+            All position numbers where there is a relative minimum in vector "data"
+        min_val: 1D numpy float array
+            Values at these positions
         """
         N = len(data)
         NN = np.arange(N, dtype="int")
@@ -1906,26 +1880,23 @@ class Main(QtWidgets.QWidget):
         #   half_extreme_xxx[i]==half_width.
         extreme_pos = np.zeros(N, dtype=bool)
         extreme_neg = np.zeros(N, dtype=bool)
-        # # Define vectors with ones have lengths of the full or half sliding window
-        #     test = np.ones(2*half_width+1)
-        #     half_test = np.ones(half_width)
         # Start loop over data points
         for k in range(N):
             # Sum of neigbouring points for which value[i] <= (>=) value[test_point]
             dn0 = min(half_width, k)
-            dn1 = min(half_width, N - k - 1)
-            width = dn0 + dn1 + 1
-            ext_pos = sum(data[k] - data[k - dn0 : k + dn1 + 1] >= 0) == width
+            dn1 = min(half_width, N - k - 1) + 1
+            width = dn0 + dn1
+            ext_pos = sum(data[k] - data[k - dn0 : k + dn1] >= 0) == width
             # Sum of neighbouring values to the left (half1) and right (half2) < value [test_point]
             half1 = sum(data[k] - data[k - dn0 : k] > 0)
-            half2 = sum(data[k] - data[k + 1 : k + dn1 + 1] > 0)
+            half2 = sum(data[k] - data[k + 1 : k + dn1] > 0)
             half = max(half1, half2) == half_width
             extreme_pos[k] = ext_pos and half
 
-            # Sum of neighbouring values to the left (half1) and right (half2) > value [test_point]
-            ext_neg = sum(data[k] - data[k - dn0 : k + dn1 + 1] <= 0) == width
+            # Sum of neighbouring values to the left (half1) or right (half2) > value [test_point]
+            ext_neg = sum(data[k] - data[k - dn0 : k + dn1] <= 0) == width
             half1 = sum(data[k] - data[k - dn0 : k] < 0)
-            half2 = sum(data[k] - data[k + 1 : k + dn1 + 1] < 0)
+            half2 = sum(data[k] - data[k + 1 : k + dn1] < 0)
             half = max(half1, half2) == half_width
             extreme_neg[k] = ext_neg and half
         # Search all points that fulfill the criteria for local maximum and minimum
@@ -1977,7 +1948,6 @@ class Main(QtWidgets.QWidget):
                     sig.append(sord[i])
                     i += 1
                 break
-            i += 1
             #            continue
             # if sign of position i is the same as the one of position i-1 search for next
             #   position where sign changes
@@ -2016,6 +1986,81 @@ class Main(QtWidgets.QWidget):
         min_pos = pos[sig < 0]
         del pos, val, sig, positions, signs, values
         return max_pos, max_val, min_pos, min_val
+
+    def min_max2D(self, data, half_width=3):
+        """
+        Find all relative minima and maxima in a 2D data matrix.
+        
+        A maximum is found if a value at position i of the vector is larger
+        than or equal to all other values in a range [i-half_width:i+half_with]
+        in both directions independently and at the same time strictly larger
+        than all values of one side.
+        
+        The function searches first all relative extrema alng every column, then
+        along every row. The returned positions are the combination of points
+        found in both directions. In this way ridges parallel to the x axis
+        and parallel to the y axes are detected.
+
+        Parameters
+        ----------
+        data : 2D numpy float array
+            Data matrix to be analysed
+        half_width : int, optional (default: 3)
+            Number of samples analyzed to all ides of every data sample.
+
+        Returns
+        -------
+        maxima : List of two 1D numpy int arrays
+            All position numbers where there is a relative maximum in array "data".
+            maxima[0]: vector of row numbers, maxima[1]: vector of column numberss
+        minima: List of two 1D numpy int arrays
+            All position numbers where there is a relative minimum in array "data"
+            minima[0]: vector of row numbers, minima[1]: vector of column numbers
+        """
+        ny,nx = data.shape
+        extreme_pos = np.zeros((ny,nx), dtype=bool)
+        extreme_neg = np.zeros((ny,nx), dtype=bool)
+        # Loop over columns
+        for k in range(nx):
+            max_pos, _, min_pos, _ = self.min_max(data[:,k],half_width=half_width)
+            extreme_pos[max_pos,k] = True
+            extreme_neg[min_pos,k] = True
+        # Loop over columns
+        for k in range(ny):
+            max_pos, _, min_pos, _ = self.min_max(data[k,:],half_width=half_width)
+            extreme_pos[k,max_pos] = True
+            extreme_neg[k,min_pos] = True
+        return np.where(extreme_pos), np.where(extreme_neg)
+
+    def zero_xing2D(self, data):
+        """
+        Search zero crossings in a 2D data set
+        
+        The zero crossing is marked in the cell to the left or below the zero
+        crossing if the value itself is not zero.
+        
+        Parameters
+        ----------
+        data : 2D numpy float array
+            data to be analyzed
+
+        Returns
+        -------
+        zeroes : List of two 1D numpy int arrays
+            All position numbers where there is a zero crossing in array "data".
+            zeroes[0]: vector of row numbers, zeroes[1]: vector of column numbers
+        
+        """
+        ny,nx = data.shape
+        xing = np.zeros((ny,nx), dtype=bool)
+        for k in range(nx-1):
+            for i in range(ny-1):
+                if data[i,k] == 0.:
+                    xing[i,k] = True
+                    continue
+                if data[i,k]*data[i+1,k]<0. or data[i,k]*data[i,k+1]<0.:
+                    xing[i,k] = True
+        return np.where(xing)
 
     def spector_line(self, data, d, n_coef, half_width):
         """
@@ -2087,7 +2132,8 @@ class Main(QtWidgets.QWidget):
         isplit = np.argmin(abs(kk - kkk[isp]))
         depth1 = -reg1.coef_[0] / 2
         depth2 = -reg2.coef_[0] / 2
-        return depth1, depth2, isplit, reg1.intercept_, reg2.intercept_, fit, dd, kk
+        return depth1, depth2, isplit, reg1.intercept_, reg2.intercept_, fit, dd,\
+               kk, d, kkk
 
     # Store best fitting depths in list
 
@@ -2169,7 +2215,7 @@ class Main(QtWidgets.QWidget):
             else:
                 data = self.sensor1_inter[:, il]
                 pos_line = self.x_inter[il]
-            depth1, depth2, isplit, intercept1, intercept2, fit, _, _ = (
+            depth1, depth2, isplit, intercept1, intercept2, fit, _, _, _, _ = (
                 self.spector_line(data, dsamp, n_Ny, half_width)
             )
             if not depth1:
@@ -2214,16 +2260,10 @@ class Main(QtWidgets.QWidget):
             else:
                 data = self.sensor1_inter[:, il]
                 pos_line = self.x_inter[il]
-            depth1, depth2, isplit, intercept1, intercept2, fit, dd, kk = (
+            depth1, depth2, isplit, intercept1, intercept2, fit, dd, kk, d, kkk = (
                 self.spector_line(data, dsamp, n_Ny, half_width)
             )
             dk = kk[1] - kk[0]
-            max_pos, d, _, _ = self.min_max(dd, half_width=half_width)
-            try:
-                kkk = kk[max_pos]
-            except IndexError:
-                print(f"IndexError in Spector: max_pos={max_pos}")
-                break
             n0 = 0
             y = np.zeros(n_Ny - 1)
             y[:] = np.nan
@@ -2686,6 +2726,64 @@ class Main(QtWidgets.QWidget):
                             + f"    {fits[j,i]:0.5f}\n"
                         )
 
+    def gradient(self, data, dx, dy, filt=5.):
+        """
+        Calculate absolute gradient of a data set interpolated onto a regular grid.
+        
+        The grid step may be different in x and y directions.
+
+        Parameters
+        ----------
+        data : 2D numpy float array
+            Data for which gradient should be calculated.
+        dx : float
+            Grid step in x-direction.
+        dy : float
+            Grid step in y-direction.
+        filt : float
+            Size of gaussian filter applied to data before gradient calculation
+            in number of grid points (the maximum grid size from x and y
+            direction is the reference). If filt==0, no gaussian filter applied
+
+        Returns
+        -------
+        2D numpy float array with the same size as data
+            Absolute data gradient.
+
+        """
+        import scipy.ndimage as nd
+# Apply gaussian filter
+        if dx > dy:
+            sigx = filt
+            sigy = sigx*dx/dy
+        else:
+            sigy = filt
+            sigx = sigy*dy/dx
+        sigma = [sigy, sigx]
+        if sigx > 0.:
+            ny,nx = data.shape
+            d = np.zeros((ny+10,nx+10))
+            d[5:-5,5:-5] = data
+            for i in range(5):
+                d[i,5:-5] = data[0,:]
+                d[ny-1-i,5:-5] = data[-1,:]
+            for i in range(5):
+                d[:,i] = d[:,5]
+                d[:,nx+9-i] = d[:,-6]
+            d = nd.filters.gaussian_filter(d, sigma, mode='constant')
+            d = d[5:-5,5:-5]
+        else:
+            d = np.copy(data)
+        gx = np.zeros_like(d)
+        gy = np.zeros_like(d)
+        gx[:,1:-1] = (d[:,2:] + d[:,0:-2] - 2*d[:,1:-1])/(2*dx)
+        gx[:,0] = gx[:,1]
+        gx[:,-1] = gx[:,-2]
+        gy[1:-1,:] = (d[2:,:] + d[0:-2,:] - 2*d[1:-1,:])/(2*dy)
+        gy[0,:] = gy[1,:]
+        gy[-1,:] = gy[-2,:]
+        return np.sqrt(gx**2+gy**2)
+
     def tilt(self):
         """
         Calculate tilt angle (Miller & Singh, JAG, 1994)
@@ -2703,7 +2801,13 @@ class Main(QtWidgets.QWidget):
             tilt_ang, vgrad, vgrad2, hgrad = self.u.tilt(
                 self.sensor1_fill, None, self.dx, self.dy
             )
+        tilt_grd = self.gradient(tilt_ang, self.dx, self.dy)*1000.
+        max_pos, _ = self.min_max2D(tilt_grd, half_width=3)
+        tilt_grd[:,:] = 0.
+        tilt_grd[max_pos[0],max_pos[1]] = 1.
         tilt_ang[self.mask1] = np.nan
+        tilt_grd[self.mask1] = np.nan
+        # zeroes = self.zero_xing2D(tilt_ang)
         vgrad[self.mask1] = np.nan
         vgrad2[self.mask1] = np.nan
         hgrad[self.mask1] = np.nan
@@ -2748,7 +2852,7 @@ class Main(QtWidgets.QWidget):
         self.ax_grad[2].set_xlim([xmin, xmax])
         self.ax_grad[2].set_ylim([ymin, ymax])
 
-        self.fig_tilt, self.ax_tilt = self.w.plotFloating(
+        self.fig_tilt_ang, self.ax_tilt_ang = self.w.plotFloating(
             tilt_ang,
             self.x_inter,
             self.y_inter,
@@ -2758,7 +2862,29 @@ class Main(QtWidgets.QWidget):
             ptitle="Tilt angle",
             xlabel="Easting [m]",
             ylabel="Northing [m]",
-            clabel="Tilt angle [rad]",
+            clabel="Tilt_angle [rad]",
+            c=self.color,
+        )
+        if self.w.geography_flag:
+            self.w.plot_geography(self.ax_tilt_ang)
+        if self.w.plotLin_flag:
+            self.w.plot_lineaments(self.ax_tilt_ang)
+        # self.ax_tilt_ang.scatter(self.x_inter[zeroes[1]],self.y_inter[zeroes[0]],\
+        #                          c="k", s=4, marker=".")
+        self.ax_tilt_ang.set_xlim([np.nanmin(self.x_inter), np.nanmax(self.x_inter)])
+        self.ax_tilt_ang.set_ylim([np.nanmin(self.y_inter), np.nanmax(self.y_inter)])
+
+        self.fig_tilt, self.ax_tilt = self.w.plotFloating(
+            tilt_grd,
+            self.x_inter,
+            self.y_inter,
+            wtitle="Tilt angle gradient",
+            sizeh=1200,
+            sizev=900,
+            ptitle="Normalized tilt angle gradient",
+            xlabel="Easting [m]",
+            ylabel="Northing [m]",
+            clabel="Gradient maxima (n.u.)",
             c=self.color,
         )
         if self.w.geography_flag:
@@ -2796,16 +2922,17 @@ class Main(QtWidgets.QWidget):
                 del self.lineaments[min_lin]
                 self.fig_tilt.close()
                 self.fig_tilt, self.ax_tilt = self.w.plotFloating(
-                    tilt_ang,
+                    tilt_grd,
                     self.w.x_inter,
                     self.w.y_inter,
-                    wtitle="Tilt angle",
+                    wtitle="Tilt angle gradient",
                     sizeh=1200,
                     sizev=900,
-                    ptitle="Tilt angle",
+                    percent=0.01,
+                    ptitle="Normalized tilt gradient",
                     xlabel="Easting [m]",
                     ylabel="Northing [m]",
-                    clabel="Tilt angle [rad]",
+                    clabel="Gradient maxima (n.u.)",
                     c=self.color,
                 )
                 if self.w.plotLin_flag:
@@ -2825,6 +2952,7 @@ class Main(QtWidgets.QWidget):
                 continue
             if len(self.coor_x) == 0:
                 self.fig_tilt.close()
+                self.fig_tilt_ang.close()
                 self.fig_grad.close()
                 break
             self.nlineaments += 1
@@ -3608,7 +3736,8 @@ class Main(QtWidgets.QWidget):
             #                     self.window.general_sign
             #                 rec = self.traces.receiver[i]
             #                 fh.write(f"{rec} {a:0.0f}\n")
-            print("application finished.\nClose console if you are working with Spyder")
+            print("\nApplication finished.\n\n"+\
+                  "Close console if you are working with Spyder")
             # if self.utilities.w_tau:
             #     self.utilities.w_tau.close()
             # if self.utilities.w_env:

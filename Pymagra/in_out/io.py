@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Sep  6 2023, 15:12:59
-Last modified on Mon Oct 30 2023
+Last modified on Aug 26, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
          University Paris-Saclay, France
@@ -512,6 +511,7 @@ class Data:
             self.segments[line]["y"] = np.median(self.y[n1:n2])
             self.segments[line]["mask"] = True
             self.segments[line]["block"] = self.n_blocks
+            self.segments[line]["direction"] = self.line_declination
             self.segments[line]["dir"] = "odd"
             self.segments[line]["pos"] = self.segments[line]["x"]
         self.sensor1 = np.array(self.sensor1)
@@ -634,12 +634,15 @@ class Data:
             self.segments[ir]["dy"] = [0]
             self.segments[ir]["d"] = [self.dx]
             self.segments[ir]["median1"] = np.median(d)
+            self.segments[ir]["median2"] = 0.
             self.segments[ir]["x"] = np.median(self.x_inter)
             self.segments[ir]["y"] = self.y_inter[ir]
             self.segments[ir]["mask"] = True
             self.segments[ir]["block"] = self.n_blocks
             self.segments[ir]["dir"] = "odd"
             self.segments[ir]["pos"] = self.y_inter[ir]
+            self.segments[ir]["direction"] = self.line_declination
+            self.segments[ir]["sensor"] = 1
         self.x = np.array(self.x)
         self.y = np.array(self.y)
         self.z = np.ones_like(self.x) * self.h_sensor
@@ -655,7 +658,7 @@ class Data:
         self.data["dispo"] = 0
         self.data["block"] = self.n_blocks
         self.data["height"] = self.h_sensor
-        self.data["line_declination"] = 0.0
+        self.data["line_declination"] = self.line_declination
         return self.data
 
     def read_BRGM_flight(self, file):
@@ -666,12 +669,6 @@ class Data:
         ----------
         file : str
             Name of file containing the data.
-        line : int or float
-            If > 100000. it is supposed that line contains the Easting coordinate in meters
-            rounded to the next km. The program transforms this coordinate into the
-            number of the flight line for Morvan data. First line at 666000.
-
-            else: flight line number (starts with 320, increment 10, one line per km)
 
         Returns
         -------
@@ -721,12 +718,15 @@ class Data:
                 self.segments[nl1]["dy"] = [abs(y[-1] - y[0]) / (len(y) - 1)]
                 self.segments[nl1]["d"] = [self.segments[nl1]["dy"]]
                 self.segments[nl1]["median1"] = np.median(v)
+                self.segments[nl1]["median2"] = 0.
                 self.segments[nl1]["x"] = np.round(np.median(x), -3)
                 self.segments[nl1]["y"] = np.median(y)
                 self.segments[nl1]["mask"] = True
                 self.segments[nl1]["block"] = self.n_blocks
                 self.segments[nl1]["dir"] = "odd"
                 self.segments[nl1]["pos"] = self.segments[nl1]["x"]
+                self.segments[nl1]["direction"] = 0.
+                self.segments[nl1]["sensor"] = 1
                 x = []
                 y = []
                 t = []
@@ -752,12 +752,15 @@ class Data:
         self.segments[nl]["dy"] = [abs(y[-1] - y[0]) / (len(y) - 1)]
         self.segments[nl]["d"] = [self.segments[nl]["dx"]]
         self.segments[nl]["median1"] = np.median(v)
+        self.segments[nl]["median2"] = 0.
         self.segments[nl]["x"] = np.round(np.median(x), 3)
         self.segments[nl]["y"] = np.round(np.median(y), 3)
         self.segments[nl]["mask"] = True
         self.segments[nl]["block"] = self.n_blocks
         self.segments[nl]["dir"] = "odd"
         self.segments[nl]["pos"] = self.segments[nl]["x"]
+        self.segments[nl]["direction"] = 0.
+        self.segments[nl]["sensor"] = 1
         self.n_lines = nl
         self.x = np.array(self.x)
         self.y = np.array(self.y)

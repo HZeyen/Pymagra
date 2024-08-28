@@ -8,16 +8,15 @@ Wrapper for PyMaGra program
 """
 
 import sys
+import os
 from pathlib import Path
 from PyQt5 import QtWidgets
 
-# import Pymagra as pmg
+#import Pymagra as pmg
 from Pymagra import PyMaGra
 
 if __name__ == "__main__":
-    #    dir0 = r"D:/Tadjikistan/ZolIZard/"
-    dir0 = r"D:/Documents/Cours/Stages/M1/2023-24/Magnetics/2023-09-24"
-    #    dir0 = r"E:/Daten/Fontaines_Salées_BRGM"
+    dir0 = os.getcwd()
 
     def my_exception_hook(exctype, value, tracebk):
         """
@@ -67,6 +66,6 @@ if __name__ == "__main__":
         main.w.showMaximized()
         sys.exit(app.exec_())
     except Exception as error:
-        print(f"An unexpected exception occurred: {error}.")
+        print(f'An unexpected exception occurred: {error}.')
         #        sys.exit()
         pass

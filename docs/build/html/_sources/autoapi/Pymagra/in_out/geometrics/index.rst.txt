@@ -1,0 +1,559 @@
+Pymagra.in_out.geometrics
+=========================
+
+.. py:module:: Pymagra.in_out.geometrics
+
+.. autoapi-nested-parse::
+
+   Last modified on Aug 26, 2024
+
+   @author: Hermann Zeyen University Paris-Saclay, France
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   Pymagra.in_out.geometrics.Geometrics
+
+
+Module Contents
+---------------
+
+.. py:class:: Geometrics
+
+   Input and output of Geometrics format files.
+
+   Methods:
+
+   - __init__
+   - fill_dict
+   - read_stn
+   - write_stn
+   - clean_data
+   - line_days
+   - get_line
+   - geometrics_lines
+   - get_segment
+   - read_base
+   - write_base
+
+
+
+   .. py:attribute:: u
+
+
+   .. py:attribute:: n_lines
+      :value: 0
+
+
+
+   .. py:attribute:: n_data
+      :value: 0
+
+
+
+   .. py:attribute:: grad_data
+      :value: True
+
+
+
+   .. py:attribute:: geography_flag
+      :value: False
+
+
+
+   .. py:attribute:: grid_flag
+      :value: True
+
+
+
+   .. py:attribute:: unit
+      :value: 'nT'
+
+
+
+   .. py:attribute:: lines_per_day
+
+
+   .. py:attribute:: grad
+
+
+   .. py:attribute:: year_base
+
+
+   .. py:attribute:: month_base
+
+
+   .. py:attribute:: day_base
+
+
+   .. py:attribute:: hour_base
+
+
+   .. py:attribute:: minute_base
+
+
+   .. py:attribute:: second_base
+
+
+   .. py:attribute:: time_base
+
+
+   .. py:attribute:: jday_base
+
+
+   .. py:attribute:: base
+
+
+   .. py:attribute:: year
+
+
+   .. py:attribute:: month
+
+
+   .. py:attribute:: day
+
+
+   .. py:attribute:: hour
+
+
+   .. py:attribute:: minute
+
+
+   .. py:attribute:: second
+
+
+   .. py:attribute:: time
+
+
+   .. py:attribute:: x
+
+
+   .. py:attribute:: y
+
+
+   .. py:attribute:: x1
+
+
+   .. py:attribute:: y1
+
+
+   .. py:attribute:: x2
+
+
+   .. py:attribute:: y2
+
+
+   .. py:attribute:: sensor1
+
+
+   .. py:attribute:: sensor2
+
+
+   .. py:attribute:: sensor1_ori
+
+
+   .. py:attribute:: sensor2_ori
+
+
+   .. py:attribute:: grad_ori
+
+
+   .. py:attribute:: n_blocks
+      :value: 0
+
+
+
+   .. py:attribute:: d_sensor
+      :value: 0.0
+
+
+
+   .. py:attribute:: d_sensor2
+      :value: 0.0
+
+
+
+   .. py:attribute:: h_sensor
+      :value: 0.0
+
+
+
+   .. py:attribute:: dispo
+      :value: 0
+
+
+
+   .. py:attribute:: infile
+      :value: ''
+
+
+
+   .. py:attribute:: segments
+
+
+   .. py:attribute:: grad_flag
+      :value: False
+
+
+
+   .. py:attribute:: dx
+      :value: 0.0
+
+
+
+   .. py:attribute:: dy
+      :value: 0.0
+
+
+
+   .. py:attribute:: direction
+      :value: 0
+
+
+
+   .. py:attribute:: d_lines
+      :value: 0.0
+
+
+
+   .. py:attribute:: line_pos
+
+
+   .. py:attribute:: line_choice
+      :value: 'all'
+
+
+
+   .. py:method:: fill_dict(ntracks, x1, y1, mag1, x2, y2, mag2, mark_samples, dx_seg, dy_seg, d_seg)
+
+      Fill in values of dictionary self.segments for a full line.
+
+      :param ntracks: Actual line number (in horizontal configuration, dictionary entrancies
+                      ntracks and ntarcks+1 are filled).
+      :type ntracks: int
+      :param x1: X-coordinates for sensor 1 data.
+      :type x1: list of floats
+      :param y1: Y-coordinates for sensor 1 data.
+      :type y1: list of floats
+      :param mag1: Magnetic data recorded by sensor 1.
+      :type mag1: list of floats
+      :param x2: X-coordinates for sensor 2 data.
+      :type x2: list of floats
+      :param y2: Y-coordinates for sensor 2 data.
+      :type y2: list of floats
+      :param mag2: Magnetic data recorded by sensor 1.
+      :type mag2: list of floats
+      :param mark_samples: Number of the sample just after a mark.
+      :type mark_samples: list of int
+      :param dx_seg: Step length in x-direction for every segment.
+      :type dx_seg: list of floats
+      :param dy_seg: Step length in y-direction for every segment.
+      :type dy_seg: list of floats
+      :param d_seg: Total step length for every segment.
+      :type d_seg: list of floats
+
+      :rtype: None.
+
+
+
+   .. py:method:: append_data(x, y, d, year, month, day, hour, minute, second, time)
+
+      Appends date and time information of one segment to global arrays
+
+      :param x: x-coordinate of data points
+      :type x: list of float
+      :param y: y-coordinate of data points
+      :type y: list of float
+      :param d: measured values of sensor 1
+      :type d: list of float
+      :param year: year of acquisition of data points
+      :type year: list of int
+      :param month: month of acquisition of data points
+      :type month: list of int
+      :param day: day of acquisition of data points
+      :type day: list of int
+      :param hour: hour of acquisition of data points
+      :type hour: list of int
+      :param minute: minute of acquisition of data points
+      :type minute: list of int
+      :param second: second of acquisition of data points
+      :type second: list of float
+      :param time: julian day of data points
+      :type time: list of int
+
+
+
+   .. py:method:: read_stn(infile, n_block, d_sensor=0.9, h_sensor=0.4, dispo=0)
+
+      Reads a 2-sensor Geometix .stn file
+      If other data have already been read from another file, the new ones are
+      added to the vectors with new line numbers, even if effectively, the
+      measurements may have been done in the prolongation of existing lines.
+
+      :param infile: Name of file to be read.
+      :type infile: str
+      :param n_block: Number of block (file) of this data set within all files to be read.
+      :type n_block: int
+      :param d_sensor: Distance between sensors [m]. It is supposed that sensor1 is the
+                       upper one. If this is not the case, d_sensor must be negative.
+      :type d_sensor: float. Optional, default: 0.9 m.
+      :param h_sensor: Hight of lower sensor (sensor 2) above ground [m]. Default: 0.4 m
+      :type h_sensor: float, optional
+      :param disop: If two sensors were used, dispo indicates there relative position:
+
+                    - If dispo == 0: vertical disposition, sensor 2 above sensor 1.
+                    - If dispo == 1: horizontal disposition, sensor 2 to the right of sensor 1.
+      :type disop: int, optional
+      :param Data are stored in the following arrays:
+      :param - self.sensor1:
+      :type - self.sensor1: 1D numpy float array contains all data of sensor 1
+      :param - self.sensor2:
+      :type - self.sensor2: 1D numpy float array contains all data of sensor 2
+      :param - self.day:
+      :type - self.day: 1D numpy int array contains day of acquisition for all data
+      :param - self.month:
+      :type - self.month: 1D numpy int array contains month of acquisition for all data
+      :param - self.year:
+      :type - self.year: 1D numpy int array contains year of acquisition for all data
+      :param - self.hour:
+      :type - self.hour: 1D numpy int array contains hour of acquisition for all data
+      :param - self.minute:
+      :type - self.minute: 1D numpy int array contains minute of acquisition for all data
+      :param - self.second:
+      :type - self.second: 1D numpy float array contains second of acquisition for all data
+      :param - self.time: counted from the beginning of the acquisition year
+      :type - self.time: 1D numpy float array contains seconds of acquisition for all data
+      :param - self.x:
+      :type - self.x: 1D numpy float array contains x-coordinates of measurement points
+      :param - self.y:
+      :type - self.y: 1D numpy float array contains y-coordinates of measurement points
+      :param - self.segments: Since all data are stored sequentially, we need to know  which data belong
+                              to which line and it may also be necessary to know where marks were set, thus
+                              where a measured segment starts and ends.
+                              self.segments.keys() contains line numbers starting at zero
+                              Every dictionary entrance contains the following lists:
+
+                              - "mark_samples" contains for every mark (starting and
+                                end of line included) the number of the sample in self.sensor1 or 2
+                                recorded just after the mark
+                              - "mask" is initially set to True but may be modified in order to
+                                plot only certain lines. If True, lines are plotted, else they are
+                                excluded from plot
+                              - "median1" : median value of sensor 1 for a line
+                              - "median2" : median value of sensor 2 for a line
+                                If sensors are in horizontal configuration, both sensors are treated
+                                as sensor 1 and "median2" has value 0.
+                              - "sensor" : may be 0 if both sensors are used in vertical configuration,
+                                1 or 2 if line has been measured by sensor 1 or 2 in horizontal
+                                configuration.
+                              - "dx" contains for every segment the sampling step in X direction.
+                              - "dy" contains for every segment the sampling step in Y direction.
+                              - "d" contains for every segment the sampling step length.
+                                dx, dy and d contain one value less than mark_samples
+                              - "x" median of x-coordinates
+                              - "y" median of y-coordiantes
+                                depending on the line direction, "x" or "y" are supposed to be
+                                the position of the line
+                              - "pos" coordinate of the line
+                              - "block" number of block (or file) if several files are read
+                              - "dir" may be "odd" or "even". First measured line is "odd"
+                                (odd or even refers to natural counting)
+                              - "direction" is "N", "S", "W" or "E" depending on the line direction
+
+                              In addition, the following attributes are accessible:
+
+                              - self.n_data   : int, total number of data
+                              - self.n_lines : int, number of lines read
+                              - self.direction : int, direction of measurement lines.
+                                May be 0 (Y-direction) or 1 (X-direction)
+                              - self.d_lines : float, distance between measurement lines
+      :type - self.segments: Dictionary with information for all lines and segments measured
+
+      :returns: **data** -- Each entry is itself a dictionary containing the following entries:
+
+                - "s1": Numpy float array with data of sensor 1
+                - "s2": Numpy float array with data of sensor 2
+                  If only data of one single sensor were measured, "s2" contains
+                  only one zero.
+                - "x":  E-W coordinates of data points
+                - "y"   N-S coordinates of data points
+      :rtype: dictionary with one entry per line, key = number of line.
+
+
+
+   .. py:method:: write_stn(file, data1, x, y, *, data2=None, day=None, month=None, year=None)
+
+      Writes Geometrics magnetic gradiometer file in ASCII.
+
+      :param Obligatory parameters:
+      :param file: File where to store the data.
+      :type file: str
+      :param data1: Data of sensor 1.
+      :type data1: numpy float array [number_of_samples_per_line, number_of_lines]
+      :param x: X coordinates of all measured points.
+      :type x: numpy float array [number_of_samples_per_line]
+      :param y: Y coordinates of all measured points.
+      :type y: numpy float array [number_of_samples_per_line, number_of_lines]
+      :param Optional parameters:
+      :param data2: Data of sensor 2. Optional. Default: np.zeros_like(data1)
+      :type data2: numpy float array [number_of_samples_per_line, number_of_lines]
+      :param day: Day of acquisition. Optional. Default: self.day[0]
+      :type day: int
+      :param month: Month of acquisition. Optional. Default: self.month[0]
+      :type month: int
+      :param year: Year of acquisition (2 ciphers). Optional. Default: self.year[0]
+      :type year: int
+      :param direction: If direction == 0: measurements were done in Y direction,
+                        else in X direction. Optional. Default: self.direction
+      :type direction: int
+
+      :rtype: None.
+
+
+
+   .. py:method:: clean_data(min_fix=None, max_fix=None, percent_down=None, percent_up=None)
+
+      Set data to np.nan under certain conditions which may be:
+
+      :param min_fix: All data below this value are set to nan
+      :type min_fix: float. Optional (default: None)
+      :param max_fix: All data above this value are set to nan
+      :type max_fix: float. Optional (default: None)
+      :param percent_down: The lowermost percentile values are set to nan. A value of 0.01 means
+                           that all values lower than the 1% quantile are set to None
+      :type percent_down: float. Optional (default: None)
+      :param percent_up: The uppermost percentile values are set to nan. A value of 0.01 means
+                         that all values higher than the 99% quantile are set to None
+      :type percent_up: float. Optional (default: None)
+      :param The operation is done in situ.:
+
+
+
+   .. py:method:: line_days()
+
+      Create a dictionary containing for every day of data acquisition the
+      numbers of the lines having been measured.
+
+      :returns: **self.lines_per_day** -- Dictionary has as key the number of the day. It is implicitely
+                supposed that the days are unique, i.e. measurements were not done
+                over a period longer than a month. For every entrance, a list contains
+                the line numbers
+      :rtype: dict
+
+
+
+   .. py:method:: get_line(i_line=0)
+
+      Get data of one single line
+
+      :param i_line: Number of line to be extracted (counting starts at 0). The default is 0.
+      :type i_line: int, optional
+
+      :returns: * **sensor1** (*numpy float array*) -- Data of sensor 1.
+                * **sensor2** (*numpy float array*) -- Data of sensor 2.
+                * **x** (*numpy float array*) -- X-coordinate of all data points extracted.
+                * **y** (*numpy float array*) -- Y-coordinate of all data points extracted.
+                * **year** (*numpy int array*) -- year of acquisition of all data points extracted.
+                * **month** (*numpy int array*) -- month of acquisition of all data points extracted.
+                * **day** (*numpy int array*) -- day of acquisition of all data points extracted.
+                * **hour** (*numpy int array*) -- hour of acquisition of all data points extracted.
+                * **minute** (*numpy int array*) -- minute of acquisition of all data points extracted.
+                * **second** (*numpy float array*) -- second of acquisition of all data points extracted.
+                * **time** (*numpy int array*) -- second of day of acquisition of all data points extracted.
+
+
+
+   .. py:method:: geometrics_lines()
+
+      Put all data into a simplified dictionary, one entry per line
+
+      No input parameters
+
+      :returns: **data** -- Each entry is itself a dictionary containing the following entries:
+
+                - "s1": Numpy float array with data of sensor 1
+                - "s2": Numpy float array with data of sensor 2
+                  If only data of one single sensor were measured, "s2" contains only one zero.
+                - "x":  E-W coordinates of data points
+                - "y"   N-S coordinates of data points
+      :rtype: dictionary with one entry per line, key = number of line.
+
+
+
+   .. py:method:: get_segment(i_line=0, i_seg=0)
+
+      Get data of one segment (data between two marks) of a line
+
+      :param i_line: Number of line to be extracted (counting starts at 0). The default is 0.
+      :type i_line: int, optional
+      :param i_seg: Number of segment within line to be extracted (counting starts at 0).
+                    The default is 0.
+      :type i_seg: int, optional
+
+      :returns: * **sensor1** (*numpy float array*) -- Data of sensor 1.
+                * **sensor2** (*numpy float array*) -- Data of sensor 2.
+                * **x** (*numpy float array*) -- X-coordinate of all data points extracted.
+                * **y** (*numpy float array*) -- Y-coordinate of all data points extracted.
+                * **year** (*numpy int array*) -- year of acquisition of all data points extracted.
+                * **month** (*numpy int array*) -- month of acquisition of all data points extracted.
+                * **day** (*numpy int array*) -- day of acquisition of all data points extracted.
+                * **hour** (*numpy int array*) -- hour of acquisition of all data points extracted.
+                * **minute** (*numpy int array*) -- minute of acquisition of all data points extracted.
+                * **second** (*numpy float array*) -- second of acquisition of all data points extracted.
+                * **time** (*numpy int array*) -- second of day of acquisition of all data points extracted.
+
+
+
+   .. py:method:: read_base(infile, year=None)
+
+      Read data from a base station. It is supposed the base station is a
+      Geometrics PPM station. The function recognizes automatically whether
+      it is a G-856 (old version) or a G-857 (newer version) instrument
+
+      If other data have already been read in, the new ones are concatenated
+      to the existing data. Before leaving the subroutine, data are sorted by
+      measurement time. In this way, the order of data storage within a file
+      and the order of reading of different files are without importance.
+
+      :param infile: Name of file containing base station data.
+      :type infile: str
+      :param year: If base station data were recorded with a G-856 PPM, the date is
+                   coded as Julian day without the year of acquisition. In this case,
+                   the year should be given. If Geometrics G-858 (Cs magnetometer) data
+                   have been input already, the year of those data may be used and the
+                   variable may be left "None". The default is None.
+      :type year: int, optional
+      :param Data are stored in the following arrays (usually:
+      :param they are base station data):
+      :param - self.base:
+      :type - self.base: 1D numpy float array contains all base station data
+      :param - self.day_base:
+      :type - self.day_base: 1D numpy int array contains day of acquisition for all data
+      :param - self.month_base:
+      :type - self.month_base: 1D numpy int array contains month of acquisition for all data
+      :param - self.year_base:
+      :type - self.year_base: 1D numpy int array contains year of acquisition for all data
+      :param - self.hour_base:
+      :type - self.hour_base: 1D numpy int array contains hour of acquisition for all data
+      :param - self.minute_base:
+      :type - self.minute_base: 1D numpy int array contains minute of acquisition for all data
+      :param - self.second_base:
+      :type - self.second_base: 1D numpy float array contains second of acquisition for all data
+      :param - self.time_base:
+      :type - self.time_base: 1D numpy float array contains second within year for all data
+
+
+
+   .. py:method:: write_base(outfile)
+
+      Write base station data in G-856 format.
+
+      :param outfile: Name of file where to write the base station data.
+      :type outfile: str
+
+
+

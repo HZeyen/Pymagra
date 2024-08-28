@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 
-project = "Pymagra"
+project = "pymagra"
 copyright = "2024, Hermann Zeyen"
 author = "Hermann Zeyen"
 release = "0.0.1"
@@ -21,12 +21,16 @@ release = "0.0.1"
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "autoapi.extension",
     "nbsphinx",
     "nbsphinx_link",
     "myst_parser",
     "sphinx.ext.autosummary",
 ]
 
+autoapi_dirs = ["../../Pymagra"]
+autoapi_type = "python"
 templates_path = ["_templates"]
 exclude_patterns = []
 
@@ -34,5 +38,5 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "classic"
+html_theme = "nature"
 html_static_path = ["_static"]

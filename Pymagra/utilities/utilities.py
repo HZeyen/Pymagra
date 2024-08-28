@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jul  7 18:08:06 2024
+Last modified on Aug. 26, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
          Université Paris-Saclay, France
@@ -1026,6 +1026,9 @@ class Utilities:
         """
         # For the number of quantiles take the number of data of the smaller data set
         n = min(len(data_fix), len(data_move))
+# It seems that the number of quantiles in sklearn.preprocessing.QuantileTransformer
+#    is limited to 10000.
+        n = min(n,10000)
         # Do the Gauss-transform of the reference data set
         GT_fix = QuantileTransformer(n_quantiles=n, output_distribution="normal")
         _ = GT_fix.fit_transform(data_fix)[:, 0]

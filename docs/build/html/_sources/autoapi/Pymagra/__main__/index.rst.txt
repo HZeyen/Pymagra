@@ -1,0 +1,36 @@
+Pymagra.__main__
+================
+
+.. py:module:: Pymagra.__main__
+
+.. autoapi-nested-parse::
+
+   Created on Mon Aug 12 13:34:18 2024
+
+   @author: Hermann
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   Pymagra.__main__.pkg_dir
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   Pymagra.__main__.execute_script
+
+
+Module Contents
+---------------
+
+.. py:data:: pkg_dir
+
+.. py:function:: execute_script()
+

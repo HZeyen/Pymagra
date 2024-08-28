@@ -1,0 +1,232 @@
+Pymagra.in_out.dialog
+=====================
+
+.. py:module:: Pymagra.in_out.dialog
+
+.. autoapi-nested-parse::
+
+   Created on Sat Jul  6 22:42:58 2024
+
+   @author: Hermann Zeyen <hermann.zeyen@gmail.com>
+            Université Paris-Saclay
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   Pymagra.in_out.dialog.Dialog
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   Pymagra.in_out.dialog.dialog
+
+
+Module Contents
+---------------
+
+.. py:function:: dialog(labels, types, values, title='Title')
+
+   Wrapper for class Dialog. Two buttons are shown for finishing: Ok and
+   Cancel.
+
+   :param labels: Explanatory text put beside the fields for data entrance.
+                  If values==None, label is interpreted as information/Warning text.
+                  For a series of Radiobuttons or Comboboxes, all corresponding labels
+                  are given as a list within the list.
+   :type labels: list of strings
+   :param types: Possible values:
+
+                 - "c": to define a check box;
+                 - "e": to define an editable box (lineEdit);
+                 - "l": To define a simple label, comment text;
+                 - "r": to define a series of radiobuttons (the corresponding list of
+                   labels is considered as one single label for the numbering of
+                   labels, types and values);
+                 - "b": to define a combobox (dropdown menu).
+   :type types: list of strings (length as labels).
+   :param values: Initial values given to editable fields.
+
+                  - Initial values for LineEdit fields (float, int or str)
+                  - None for check boxes and comboboxes
+                  - Number of radiobutton to be activated by default (natural numbering,
+                    starting at 1, not at 0).
+                  - For labels, it may be "b" (bold text), "i" (italic) or anything else,
+                    including None for standard text.
+   :type values: list of texts, numbers or Nones (length as labels)
+   :param title: Title of the dialog box.
+   :type title: str, default: "Title"
+
+   :returns: * **results** (*list of str*) -- Response of each data entrance field. Should be transformed to the
+               needed data format (int, float, ...) in the calling function.
+
+               - For radiobuttons, the returned value indicates the number of the
+                 active button (counting starts at zero).
+               - For checkboxes, the returned value is -1 if the box was not checked or
+                 gives the order in which the box was checked (starting at zero for the
+                 first box having been checked).
+             * **Dbutton** (*bool*) -- If True, "Apply" button has been pressed to finish dialog, if False
+               "Cancel" button has been pressed.
+
+
+.. py:class:: Dialog(labels, types, values=None, title='Title')
+
+   Bases: :py:obj:`PyQt5.QtWidgets.QDialog`
+
+
+   Created on Tue Sep 13 12:50:26 2022
+   @author: Hermann Zeyen
+
+   General purpose dialog box
+
+   Input
+   -----
+   labels (list, string)
+       labels explaining the different fields. For a series of radiobuttons or
+       combobax, labels[i] is itself a list.
+   types (list,string)
+       In the order of "labels", indicates the type of field the label belongs to.
+       If labels[i] is itself a list, it is considered as one single label.
+
+       String may be:
+
+       - 'l' for label (no dialog entry, only information)
+       - 'c' for checkbox
+       - 'e' for LineEdit (to enter values)
+       - 'r' for radiobutton
+       - 'b': to define a combobox (dropdown menu).
+
+       May be capital or not
+   values (list, string, float or int); Optional, default value: None
+       - Initial values for LineEdit fields;
+       - For Radiobuttons: number of button activated by default (natural counting);
+       - for labels, it may be "b" (bold), "i" (italic), or anything else
+         (usually None) for standard text.
+       - Ignored for checkbox and combobox.
+
+   title (string). Optional, default value: "Title"
+       Title of the dialog window.
+
+
+
+   .. py:attribute:: nlab
+
+
+   .. py:attribute:: labels
+
+
+   .. py:attribute:: ck_order
+
+
+   .. py:attribute:: n_checked
+      :value: 0
+
+
+
+   .. py:attribute:: Dfinish
+      :value: False
+
+
+
+   .. py:attribute:: Dbutton
+      :value: False
+
+
+
+   .. py:attribute:: dlabels
+      :value: []
+
+
+
+   .. py:attribute:: dlines
+      :value: []
+
+
+
+   .. py:attribute:: ckState
+      :value: []
+
+
+
+   .. py:attribute:: ckb
+      :value: []
+
+
+
+   .. py:attribute:: rbtn
+      :value: []
+
+
+
+   .. py:attribute:: btngroup
+      :value: []
+
+
+
+   .. py:attribute:: combo
+      :value: []
+
+
+
+   .. py:attribute:: YesBtn
+
+
+   .. py:attribute:: CancelBtn
+
+
+   .. py:attribute:: mainLayout
+
+
+   .. py:attribute:: il_add
+      :value: 0
+
+
+
+   .. py:attribute:: ilin
+      :value: 0
+
+
+
+   .. py:attribute:: il
+
+
+   .. py:method:: checked(checked)
+
+      Actions executed if a check box has changed its state.
+      If a box has been checked, the function searches the one which was
+      checked using self.ckState as indicator (this variable contains the
+      state of all check boxes before the click). Its click-order is stored
+      and self.ckState is changed. In addition, if the calling function is
+      "False_Color", the explanation text is changed and the color to be
+      used for the following clicked item is indicated. If in this case
+      the third box is clicked, a message appears that no other box can be
+      checked unless one is unchecked. If nevertheless a forth box is
+      checked, the corresponding box is automatically unchecked.
+      If a box is unchecked, this is stored in self.ckState and the colors
+      indicated are changed if necessary and if function is "False_Color".
+
+      :param checked: state of a checkbox after clicking into it
+      :type checked: QtWidget.QCheckBox.checkState
+
+      :rtype: None.
+
+
+
+   .. py:method:: on_YesButton_clicked()
+
+      If Ok button has been clicked, close Dialogue and set Dbutton to True.
+
+
+
+   .. py:method:: on_CancelButton_clicked()
+
+      If Cancel button has been clicked, close Dialogue and set Dbutton to False.
+
+
+

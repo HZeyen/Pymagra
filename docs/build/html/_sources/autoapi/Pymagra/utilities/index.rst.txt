@@ -1,0 +1,15 @@
+Pymagra.utilities
+=================
+
+.. py:module:: Pymagra.utilities
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/Pymagra/utilities/utilities/index
+
+

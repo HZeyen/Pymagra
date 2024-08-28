@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jul  7 17:59:44 2024
+Last modified on Aug 26, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
          Université Paris-Saclay, France
@@ -254,9 +254,9 @@ class plot(QMainWindow, Ui_MainWindow):
         """
         col = "k"
         for key in self.lineaments.keys():
-            if self.lineaments[key]["type"] == "gravity":
+            if "gravity" in self.lineaments[key]["type"]:
                 col = "w"
-            elif self.lineaments[key]["type"] == "magnetic":
+            elif "magnetic" in self.lineaments[key]["type"]:
                 col = "k"
             if self.lineaments[key]["type"] in self.legend:
                 ax.plot(
@@ -1214,6 +1214,7 @@ class plot(QMainWindow, Ui_MainWindow):
             return False
         # Create figure
         fig_float = newWindow(wtitle, sizeh, sizev)
+        fig_float.fig.tight_layout()
         # If 2D array is passed create single axis
         if data.ndim == 2:
             ax_float = fig_float.fig.subplots(1, 1)
@@ -1294,7 +1295,7 @@ class plot(QMainWindow, Ui_MainWindow):
         ax.set_xlabel(xl)
         ax.set_ylabel(yl)
         if bar_or == "vertical":
-            cax = ax.inset_axes([1.05, 0.05, 0.02, 0.9], transform=ax.transAxes)
+            cax = ax.inset_axes([1.015, 0.05, 0.015, 0.9], transform=ax.transAxes)
         else:
             cax = ax.inset_axes([0.05, -0.15, 0.9, 0.05], transform=ax.transAxes)
         smin = np.round(np.nanmin(data1), rd)
@@ -1304,8 +1305,9 @@ class plot(QMainWindow, Ui_MainWindow):
         ds = (ssmax - ssmin) / nticks
         ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
         ticks = list(ticks)
-        cbar = plt.colorbar(
-            im1, orientation=bar_or, cax=cax, fraction=0.1, extend="both", ticks=ticks
+#        cbar = plt.colorbar(
+        cbar = fig_float.fig.colorbar(
+            im1, orientation=bar_or, ax=ax, cax=cax, fraction=0.1, extend="both", ticks=ticks
         )
         if bar_or == "vertical":
             cbar.ax.set_ylabel(cl)
@@ -1382,7 +1384,7 @@ class plot(QMainWindow, Ui_MainWindow):
                     ax_float[1].grid(visible=True)
                 if bar_or == "vertical":
                     cax = ax_float[1].inset_axes(
-                        [1.05, 0.05, 0.02, 0.9], transform=ax_float[1].transAxes
+                        [1.015, 0.05, 0.015, 0.9], transform=ax_float[1].transAxes
                     )
                 else:
                     cax = ax_float[1].inset_axes(
@@ -1395,9 +1397,11 @@ class plot(QMainWindow, Ui_MainWindow):
                 ds = (ssmax - ssmin) / nticks
                 ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
                 ticks = list(ticks)
-                cbar = plt.colorbar(
+#                cbar = plt.colorbar(
+                cbar = fig_float.fig.colorbar(
                     im1,
                     orientation=bar_or,
+                    ax=ax,
                     cax=cax,
                     fraction=0.1,
                     extend="both",
@@ -1474,11 +1478,11 @@ class plot(QMainWindow, Ui_MainWindow):
                         ax_float[2].grid(visible=True)
                     if bar_or == "vertical":
                         cax = ax_float[2].inset_axes(
-                            [1.05, 0.05, 0.02, 0.9], transform=ax_float[2].transAxes
+                            [1.015, 0.05, 0.015, 0.9], transform=ax_float[2].transAxes
                         )
                     else:
-                        cax = ax_float[1].inset_axes(
-                            [0.05, -0.15, 0.9, 0.05], transform=ax_float[1].transAxes
+                        cax = ax_float[2].inset_axes(
+                            [0.05, -0.15, 0.9, 0.05], transform=ax_float[2].transAxes
                         )
                     smin = np.round(np.nanmin(data1), rd)
                     smax = np.round(np.nanmax(data1), rd)
@@ -1487,9 +1491,11 @@ class plot(QMainWindow, Ui_MainWindow):
                     ds = (ssmax - ssmin) / nticks
                     ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
                     ticks = list(ticks)
-                    cbar = plt.colorbar(
+#                    cbar = plt.colorbar(
+                    cbar = fig_float.fig.colorbar(
                         im1,
                         orientation=bar_or,
+                        ax=ax,
                         cax=cax,
                         fraction=0.1,
                         extend="both",

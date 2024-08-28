@@ -1,0 +1,470 @@
+Pymagra.in_out.io
+=================
+
+.. py:module:: Pymagra.in_out.io
+
+.. autoapi-nested-parse::
+
+   Last modified on Aug 26, 2024
+
+   @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
+            University Paris-Saclay, France
+
+   Contains functions for data input/output
+
+   Contains methods:
+       get_files
+       read_geography_file
+       get_mag_field
+
+   Contains class data with the following functions:
+       __init__
+       read_geometrics
+       read_txt
+       read_gxf
+       read_BRGM_flight
+       get_line
+       lines
+       write_dat
+       clean_data
+       line_days
+       get_segment
+       julian2date
+       date2julian
+       read_base
+       write_base
+       diurnal_correction
+       diurnal_variation
+       interpol_line
+       interpol_2D
+       extrapolate
+       justify_lines_median
+       justify_lines_gaussian
+       matrixExtension
+       poleReduction
+       plot_geography
+       plot_triang
+       plot_image
+       addMPL
+       rmMPL
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   Pymagra.in_out.io.Data
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   Pymagra.in_out.io.get_files
+   Pymagra.in_out.io.read_geography_file
+   Pymagra.in_out.io.get_mag_field
+
+
+Module Contents
+---------------
+
+.. py:function:: get_files(dir0=None, ftype=None)
+
+   Ask for files with ending "stn".
+   Several files may be chosen at once using as usual SHFT or CTRL.
+   If a folder was chosen, it is automatically recognized and eliminated
+   from the list of file names.
+
+   :returns: **data_files** -- list of chosen files
+   :rtype: list str
+
+
+.. py:function:: read_geography_file(file)
+
+   Reads file with geography information to be plotted (borders - mainly geological, towns)
+
+   :param file: File has the following structure:
+
+                - keyword may be "#POINT", "#LINE" or "#END"
+                - if keyword == "#POINT", one line follows with x, y coordinates and text
+                  text being the description of the point (no blanks)
+                - if keyword == "#LINE", several lines follow, each one with x and y
+                  coordinate of one point describing the line
+                - if keyword == "#END", this line finishes the data entry, possible following
+                  lines will be ignored.
+   :type file: str, name of file to be read
+
+   :returns: **geography** -- key is consecutive numbering of entries
+             Each entry consists of a dictionary with the following entries:
+
+             - "type" str
+               may be "POINT" or "LINE"
+
+               - If type == "POINT" : One line with:
+
+                   - "x" : float: x coordinate of point (East)
+                   - "y" : float: y coordinate of point (North)
+                   - "name" : str: Text to be plotted beside the point mostly name of a town
+
+               - If type == "line" :
+
+                   - "x" : list of floats, East coordinate of points describing the line
+                   - "y" : list of floats, North coordinate of points describing the line
+   :rtype: dictionary with all geography information.
+
+
+.. py:function:: get_mag_field()
+
+   Get parameters of Earth's magnetic field in the study area
+
+   :returns: * **inclination** (*float*) -- Inclination of Earth's field in degrees
+             * **declination** (*float*) -- Declination of Earth's field in degrees
+
+
+.. py:class:: Data
+
+   Class contains methods for data management in program PyMaGra
+
+
+   .. py:attribute:: sensor1
+      :value: []
+
+
+
+   .. py:attribute:: sensor2
+      :value: []
+
+
+
+   .. py:attribute:: sensor1_ori
+      :value: []
+
+
+
+   .. py:attribute:: sensor2_ori
+      :value: []
+
+
+
+   .. py:attribute:: gdata
+      :value: []
+
+
+
+   .. py:attribute:: base
+      :value: []
+
+
+
+   .. py:attribute:: grad
+
+
+   .. py:attribute:: grad_ori
+
+
+   .. py:attribute:: x_inter
+
+
+   .. py:attribute:: y_inter
+
+
+   .. py:attribute:: x
+      :value: []
+
+
+
+   .. py:attribute:: y
+      :value: []
+
+
+
+   .. py:attribute:: z
+      :value: []
+
+
+
+   .. py:attribute:: topo
+      :value: []
+
+
+
+   .. py:attribute:: dispo
+      :value: 0
+
+
+
+   .. py:attribute:: sensor1_inter
+
+
+   .. py:attribute:: sensor2_inter
+
+
+   .. py:attribute:: time
+      :value: []
+
+
+
+   .. py:attribute:: segments
+
+
+   .. py:attribute:: grad_data
+      :value: False
+
+
+
+   .. py:attribute:: d_sensor
+      :value: 0.9
+
+
+
+   .. py:attribute:: h_sensor
+      :value: 0.4
+
+
+
+   .. py:attribute:: line_declination
+      :value: 0.0
+
+
+
+   .. py:attribute:: interpol
+      :value: 0.2
+
+
+
+   .. py:attribute:: data
+
+
+   .. py:attribute:: n_blocks
+      :value: 0
+
+
+
+   .. py:attribute:: n_lines
+      :value: 0
+
+
+
+   .. py:attribute:: n_data
+      :value: 0
+
+
+
+   .. py:attribute:: direction
+      :value: 0
+
+
+
+   .. py:attribute:: dx
+      :value: 0.0
+
+
+
+   .. py:attribute:: dy
+      :value: 0.0
+
+
+
+   .. py:attribute:: line_choice
+      :value: 'all'
+
+
+
+   .. py:method:: read_geometrics(file)
+
+      Read Geometrics .stn file (G-858 instrument)
+
+      :param file: Name of data file.
+      :type file: str
+
+      :returns: * **data** (*Dictionary with keys equal to line numbers (starting at 0)*) -- Each line is itself a dictionary with the following entries:
+                  Key is line number
+
+                  - "s1": Numpy float array with data of sensor 1
+                  - "s2": Numpy float array with data of sensor 2
+                    If only data of one single sensor were measured, "s2" contains
+                    only one zero.
+                  - "x":  Numpy float array with E-W coordinates of data points
+                  - "y":  Numpy float array with N-S coordinates of data points
+                  - "grad_flag" bool. True if 2 sensors were used, False if only one sensor
+                  - "mask": bool, True if line should be plotted, False if excluded from
+                    plotting. Initially set to True
+                * *The original data are stored in class geometrics.Geometrics. See file*
+                * *geometrics.py for documentation*
+
+
+
+   .. py:method:: write_geometrics(file, data1, x, y, data2=None, n_block=0)
+
+      Wrapper to write data in Geometrics MagMap2000 .stn format.
+
+      Data must be interpolated onto a regular grid.
+
+      :param file: File name where to write data.
+      :type file: str
+      :param data1: Data of sensor 1.
+      :type data1: numpy float array [number_of_samples_per_line, number_of_lines]
+      :param x: X coordinates of all measured points.
+      :type x: numpy float array [number_of_samples_per_line]
+      :param y: Y coordinates of all measured points.
+      :type y: numpy float array [number_of_samples_per_line, number_of_lines]
+      :param Optional parameters:
+      :param data2: Data of sensor 2. Optional. Default: np.zeros_like(data1)
+      :type data2: numpy float array [number_of_samples_per_line, number_of_lines]
+      :param n_block: Number of block (data set) to be written. The default is 0.
+      :type n_block: int, optional
+
+      :rtype: None.
+
+
+
+   .. py:method:: read_txt(file)
+
+      Reads a non-Geometrics format magnetic data file
+      This option is mainly thought for reading the output of program mgwin
+      used with the option to enter all data points with their specific positions
+      (NBPTS > 0). This allows calculation of a 2D map with mgwin. You may use
+      Prepare_mgwin_calculation_points.py to preapre the coordinates.
+
+      The file structure is as follows:
+
+      - One comment line
+      - line with NX, NY (number of points in X and Y direction)
+        It is supposed that the data have been calculated on a regular
+        grid. mgwin writes on this line the total number of data points
+        the file must therefore be edited to replace the existing number
+        by the two required ones.
+      - one line per data poin with (X, Y, Z, DATA)
+
+      mgwin writes only one value into the file and in order to keep the
+      structure of Geometrics simple, these values are copied into both
+      sensor1 and sensor2 arrays.  Data are copied as well into
+      self.sensor_n (1D array) and self.sensor_n_inter (2D array)
+
+      :param file:
+      :type file: str, name of file to be read
+
+      :rtype: data
+
+
+
+   .. py:method:: read_gxf(infile)
+
+      Read a gxf file (BRGM magnetic and gravity gridded files)
+
+      :param infile: Name of file to be read
+      :type infile: string
+
+
+
+   .. py:method:: read_BRGM_flight(file)
+
+      Reads magnetic data from flight lines out of a BRGM data file
+
+      :param file: Name of file containing the data.
+      :type file: str
+
+      :returns: * **x** (*1D numpy float array*) -- E coordinate of each measured point along the line [Lambert 2 extended, meters]
+                * **y** (*1D numpy float array*) -- N coordinate of each measured point along the line [Lambert 2 extended, meters]
+                * **v** (*1D numpy float array*) -- Magnetic anomaly (measured field minus IGRF) [nT]
+                * **topo** (*1D numpy float array*) -- DMT topography at each measured point along the line [m]
+                * **height** (*1D numpy float array*) -- Flight height above topo at each measured point along the line [m]
+                * **num** (*int*) -- Number of flight line (same as line if line < 100000.)
+
+
+
+   .. py:method:: get_line(i_line=0)
+
+      Get data of one single line
+
+      :param i_line: Number of line to be extracted (counting starts at 0). The default is 0.
+      :type i_line: int, optional
+
+      :returns: * **sensor1** (*numpy float array*) -- Data of sensor 1.
+                * **sensor2** (*numpy float array*) -- Data of sensor 2.
+                * **x** (*numpy float array*) -- X-coordinate of all data points extracted.
+                * **y** (*numpy float array*) -- Y-coordinate of all data points extracted.
+                * **z** (*numpy float array*) -- height of lower sensor above ground of all data points.
+                * **time** (*numpy int array*) -- second of day of acquisition of all data points extracted.
+                * **mask** (*bool*) -- mask whether data should be plotted (True) or not (False)
+                * **direction** (*str*) -- may be "N", "S", "W" or "E", indicates the approximate line direction
+                * **sensor** (*int*) -- if 0, two sensors are used in vertical configuration. 1 if only one
+                  sensor was used or sensor 1 in horizontal configuration. 2: sensor 2
+                  in horizontal configuration.
+                * **median1** (*float*) -- Median value of line for data of sensor1.
+                * **median2** (*0 float*) -- Median value of line for data of sensor2.
+
+
+
+   .. py:method:: lines()
+
+      Put all data into a simplified dictionary, one entry per line
+
+      No input parameters
+
+      :returns: **data** -- Each entry is itself a dictionary containing the following entries:
+
+                - "s1": Numpy float array with data of sensor 1
+                - "s2": Numpy float array with data of sensor 2
+                  If only data of one single sensor were measured, "s2" contains
+                  only one zero.
+                - "x":  Numpy float array with E-W coordinates of data points
+                - "y":  Numpy float array with N-S coordinates of data points
+                - "grad_flag" bool. True if 2 sensors were used, False if only one sensor
+                - "mask": bool, True if line should be plotted, False if excluded from plotting
+      :rtype: dictionary with one entry per line, key = number of line.
+
+
+
+   .. py:method:: write_dat(file, data1, x, y, *, data2=None, z=None)
+
+      Writes Geometrics magnetic gradiometer file in Surfer format.
+
+      :param Obligatory parameters:
+      :param file: File where to store the data.
+      :type file: str
+      :param data1: Contains all data of sensor 1
+      :type data1: numpy 1D float array
+      :param x: Contains E-W coordinates of all data points
+      :type x: numpy 1D float array
+      :param y: Contains N-S coordinates of all data points
+      :type y: numpy 1D float array
+      :param Optional parameters:
+      :param data2: Contains all data of sensor 2 if there are (must have the same shape as data1).
+      :type data2: numpy 1D float array. Optional, default: None
+      :param z: Topography of all data points. If it is None, z-coordinate is set to zero
+      :type z: numpy 1D float array. Optional, default. None
+
+      :rtype: None.
+
+
+
+   .. py:method:: read_base(file, year)
+
+      Wrapper to read base station data
+
+      :param file: Name of data file containing base station data.
+      :type file: str
+      :param year: Year of data acquisition (often, data contain only day, not year).
+      :type year: int
+
+      :rtype: None.
+
+
+
+   .. py:method:: write_base(file)
+
+      Wrapper to write base station data. May be used if time variations are
+      calculated from data or if original base station data were modified,
+      normally by muting erroneous data
+
+      :param file: Name of output file.
+      :type file: str
+
+      :rtype: None.
+
+
+

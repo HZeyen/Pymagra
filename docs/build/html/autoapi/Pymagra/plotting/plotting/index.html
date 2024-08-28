@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Pymagra.plotting.plotting &#8212; pymagra 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=fd3f3429" />
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="Pymagra.utilities" href="../../utilities/index.html" />
+    <link rel="prev" title="Pymagra.plotting" href="../index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../utilities/index.html" title="Pymagra.utilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Pymagra.plotting"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">pymagra 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >API Reference</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" >Pymagra</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../index.html" accesskey="U">Pymagra.plotting</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pymagra.plotting.plotting</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-Pymagra.plotting.plotting">
+<span id="pymagra-plotting-plotting"></span><h1>Pymagra.plotting.plotting<a class="headerlink" href="#module-Pymagra.plotting.plotting" title="Link to this heading">¶</a></h1>
+<p>Last modified on Aug 26, 2024</p>
+<dl class="simple">
+<dt>&#64;author: Hermann Zeyen &lt;<a class="reference external" href="mailto:hermann&#46;zeyen&#37;&#52;&#48;universite-paris-saclay&#46;fr">hermann<span>&#46;</span>zeyen<span>&#64;</span>universite-paris-saclay<span>&#46;</span>fr</a>&gt;</dt><dd><p>Université Paris-Saclay, France</p>
+</dd>
+</dl>
+<p>Contains the following classes for plotting purposes of program PyMaGra:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>plot</p></li>
+<li><p>newWindow</p></li>
+</ul>
+</div></blockquote>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#Pymagra.plotting.plotting.plot" title="Pymagra.plotting.plotting.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a></p></td>
+<td><p>Class for plotting in PyMaGra</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#Pymagra.plotting.plotting.newWindow" title="Pymagra.plotting.plotting.newWindow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">newWindow</span></code></a></p></td>
+<td><p>This &quot;window&quot; is a QWidget. If it has no parent, it will appear as a</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Pymagra.plotting.plotting.</span></span><span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">QMainWindow</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Ui_MainWindow</span></code></p>
+<p>Class for plotting in PyMaGra</p>
+<p>Depends on the following packages:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>numpy</p></li>
+<li><p>PyQt5</p></li>
+<li><p>matplotlib</p></li>
+</ul>
+</div></blockquote>
+<p>Needed private files:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Magnetics.ui (user interface, produced with QtDesigner)</p></li>
+</ul>
+</div></blockquote>
+<p>Contains the following methods:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>__init__</p></li>
+<li><p>setClipPath</p></li>
+<li><p>set_geography_flag</p></li>
+<li><p>toggle_geography_flag</p></li>
+<li><p>plot_geography</p></li>
+<li><p>plot_lineaments</p></li>
+<li><p>plot_triang</p></li>
+<li><p>plot_image</p></li>
+<li><p>addMPL</p></li>
+<li><p>rmMPL</p></li>
+<li><p>plotFloating</p></li>
+</ul>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.fig">
+<span class="sig-name descname"><span class="pre">fig</span></span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.fig" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.main">
+<span class="sig-name descname"><span class="pre">main</span></span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.main" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.grid_flag">
+<span class="sig-name descname"><span class="pre">grid_flag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.grid_flag" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plotLin_flag">
+<span class="sig-name descname"><span class="pre">plotLin_flag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plotLin_flag" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.geography_flag">
+<span class="sig-name descname"><span class="pre">geography_flag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.geography_flag" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.legend">
+<span class="sig-name descname"><span class="pre">legend</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.legend" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.grad_data">
+<span class="sig-name descname"><span class="pre">grad_data</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.grad_data" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.unit">
+<span class="sig-name descname"><span class="pre">unit</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'nT'</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.unit" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.bar_or">
+<span class="sig-name descname"><span class="pre">bar_or</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'vertical'</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.bar_or" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.nticks">
+<span class="sig-name descname"><span class="pre">nticks</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.nticks" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.axfont">
+<span class="sig-name descname"><span class="pre">axfont</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">20</span></em><a class="headerlink" href="#Pymagra.plotting.plotting.plot.axfont" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.setClipPath">
+<span class="sig-name descname"><span class="pre">setClipPath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.setClipPath" title="Link to this definition">¶</a></dt>
+<dd><p>define clip path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>numpy float array</em>) – contains all x-coordinates of data points.</p></li>
+<li><p><strong>y</strong> (<em>numpy float array</em>) – contains all y-coordinates of data points.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>PATH matplotlib.path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.set_geography_flag">
+<span class="sig-name descname"><span class="pre">set_geography_flag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.set_geography_flag" title="Link to this definition">¶</a></dt>
+<dd><p>Set flag to plot geography information or not to value “option”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>option</strong> (<em>bool</em>) – If True, geography information is plotted.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.toggle_geography_flag">
+<span class="sig-name descname"><span class="pre">toggle_geography_flag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.toggle_geography_flag" title="Link to this definition">¶</a></dt>
+<dd><p>Inverse value of flag to plot geography information or not.</p>
+<p>No input or output parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plot_geography">
+<span class="sig-name descname"><span class="pre">plot_geography</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plot_geography" title="Link to this definition">¶</a></dt>
+<dd><p>Plot geography information into axis “ax”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>Matplotlib.Axis object</em>)</p></li>
+<li><p><strong>entries</strong> (<em>Geography information is stored in class Main as dictionary with</em>)</p></li>
+<li><p><strong>&quot;type&quot;</strong> (<em>-</em>)</p></li>
+<li><p><strong>&quot;x&quot;</strong> (<em>-</em>)</p></li>
+<li><p><strong>&quot;y&quot;</strong> (<em>-</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plot_lineaments">
+<span class="sig-name descname"><span class="pre">plot_lineaments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plot_lineaments" title="Link to this definition">¶</a></dt>
+<dd><p>Plot lineaments picked from tilt maps into axis “ax”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>Matplotlib.Axis object</em>)</p></li>
+<li><p><strong>entries</strong> (<em>Lineament information is stored as dictionary with</em>)</p></li>
+<li><p><strong>&quot;type&quot;</strong> (<em>-</em>)</p></li>
+<li><p><strong>&quot;x&quot;</strong> (<em>-</em>)</p></li>
+<li><p><strong>&quot;y&quot;</strong> (<em>-</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plot_north">
+<span class="sig-name descname"><span class="pre">plot_north</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plot_north" title="Link to this definition">¶</a></dt>
+<dd><p>Plot North arrow into map
+It is supposed that the map is drawn with set_aspect=”equal”</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib axes object</em>) – axis where to plot the North arrow.</p></li>
+<li><p><strong>angle</strong> (<em>float</em>) – Angle in degrees from N to E (geological sense, not mathematical).</p></li>
+<li><p><strong>pos</strong> (<em>str</em>) – string of two characters indicationg the position of the arrow.
+One character may be “t” or “b” for top or bottom of the plot
+The other letter may be “l” or “r” for left or right
+The order of the two characters as well as capitalization has no
+importance.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plot_sensor_triang">
+<span class="sig-name descname"><span class="pre">plot_sensor_triang</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbar_title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plot_sensor_triang" title="Link to this definition">¶</a></dt>
+<dd><p>Plot map of one sensor by triangulation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>Matplotlib axis</em>) – Axis where to plot the map</p></li>
+<li><p><strong>x</strong> (<em>Numpy 1D float array</em>) – X-coordinates of data</p></li>
+<li><p><strong>y</strong> (<em>Numpy 1D float array</em>) – Y-coordinates of data</p></li>
+<li><p><strong>s</strong> (<em>Numpy 1D float array</em>) – Values [nT or mGal]</p></li>
+<li><p><strong>vmin</strong> (<em>float</em>) – Value for lower end of color scale [nT or mGal]
+If vmin==vmax, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>vmax</strong> (<em>float</em>) – Value for upper end of color scale [nT or mGal]</p></li>
+<li><p><strong>percent</strong> (<em>float</em>) – Scaling of color scale. Maximum value is percentile (1-percent),
+minimum value for percentile percent. This is only used if mincol==maxcol.</p></li>
+<li><p><strong>cmap</strong> (<em>Matplotlib color map</em>) – Color map to be used</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em>) – Label for x-axis</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em>) – Label for y-axis</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – Title of map</p></li>
+<li><p><strong>cbar_title</strong> (<em>str</em>) – Text for color bar</p></li>
+<li><p><strong>dec</strong> (<em>float</em><em> (</em><em>optional</em><em>, </em><em>default : 0.</em><em>)</em>) – Direction of the measurement lines with respect to magnetic North
+in degrees, measured from N to E</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plot_triang">
+<span class="sig-name descname"><span class="pre">plot_triang</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Measured</span> <span class="pre">magnetic</span> <span class="pre">data'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Easting'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Northing'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rainbow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mincol1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxcol1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mincol2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxcol2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mincolg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxcolg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_flag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plot_triang" title="Link to this definition">¶</a></dt>
+<dd><p>Plot maps of not interpolated data (stn format) of both sensors using
+tricontourf</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>dictionary with one entry per line</em><em>, </em><em>key = number</em><em> of </em><em>line.</em>) – <p>Each entry is itself a dictionary containing the following entries:</p>
+<ul>
+<li><p>”s1”: Numpy float array with data of sensor 1</p></li>
+<li><p>”s2”: Numpy float array with data of sensor 2
+If only data of one single sensor were measured, “s2” contains only one zero.</p></li>
+<li><p>”x”:  Numpy float array with E-W coordinates of data points</p></li>
+<li><p>”y”:  Numpy float array with N-S coordinates of data points</p></li>
+<li><p>”grad_flag” bool. True if 2 sensors were used, False if only one sensor</p></li>
+<li><p>”mask”: bool, True if line should be plotted, False if excluded from plotting</p></li>
+</ul>
+</p></li>
+<li><p><strong>title</strong> (<em>str</em><em>, </em><em>optional</em>) – Plot title for both sensor polts (the text “sensor n” is automatically
+added, n being sensor numnber). The default is “Measured magnetic data”.</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Text for x-axis. The default is “Easting”.</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Text for y-axis. The default is “Northing”.</p></li>
+<li><p><strong>percent</strong> (<em>float</em><em>, </em><em>optional</em>) – Scaling of color scale. Maximum value is percentile (1-percent),
+minimum value for percentile percent. The default is 0.01.
+This is only used if mincol==maxcol.</p></li>
+<li><p><strong>mincol1</strong> (<em>float</em><em>, </em><em>optional</em>) – value for lower end of color scale for sensor 1 [nT]</p></li>
+<li><p><strong>maxcol1</strong> (<em>float</em><em>, </em><em>optional</em>) – value for upper end of color scale for sensor 1 [nT]
+If mincol1==maxcol1, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>mincol2</strong> (<em>float</em><em>, </em><em>optional</em>) – value for lower end of color scale for sensor 2 [nT]</p></li>
+<li><p><strong>maxcol2</strong> (<em>float</em><em>, </em><em>optional</em>) – value for upper end of color scale for sensor 2 [nT]
+If mincol2==maxcol2, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>mincolg</strong> (<em>float</em><em>, </em><em>optional</em>) – value for lower end of color scale for vertical gradient [nT/m]</p></li>
+<li><p><strong>maxcolg</strong> (<em>float</em><em>, </em><em>optional</em>) – value for upper end of color scale for vertical gradient [nT/m]
+If mincolg==maxcolg, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>c</strong> (<em>str</em><em>, </em><em>optional</em>) – Color map to be used. The default is “rainbow”.</p></li>
+<li><p><strong>grad_flag</strong> (<em>bool</em><em>, </em><em>optional</em><em>, </em><em>default: False</em>) – if True, 3 plots are shown on the screen: Sensor1, sensor2 and gradient.
+if False only the two sensors are plotted</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<em>matplotlib.figure</em>) – Figure used for plot.</p></li>
+<li><p><strong>ax</strong> (<em>matplotlib.axis</em>) – List of axes used for plots. ax has two entrances, one for each sensor</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plot_sensor_image">
+<span class="sig-name descname"><span class="pre">plot_sensor_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbar_title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plot_sensor_image" title="Link to this definition">¶</a></dt>
+<dd><p>Plot map of one sensor by triangulation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>Matplotlib axis</em>) – Axis where to plot the map</p></li>
+<li><p><strong>x</strong> (<em>Numpy 1D float array</em>) – X-coordinates of data columns</p></li>
+<li><p><strong>y</strong> (<em>Numpy 1D float array</em>) – Y-coordinates of data rows</p></li>
+<li><p><strong>s</strong> (<em>Numpy 2D float array</em>) – Values [nT or mGal] on a regular grid</p></li>
+<li><p><strong>vmin</strong> (<em>float</em>) – Value for lower end of color scale [nT or mGal]
+If vmin==vmax, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>vmax</strong> (<em>float</em>) – Value for upper end of color scale [nT or mGal]</p></li>
+<li><p><strong>percent</strong> (<em>float</em>) – Scaling of color scale. Maximum value is percentile (1-percent),
+minimum value for percentile percent. This is only used if mincol==maxcol.</p></li>
+<li><p><strong>cmap</strong> (<em>Matplotlib color map</em>) – Color map to be used</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em>) – Label for x-axis</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em>) – Label for y-axis</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – Title of map</p></li>
+<li><p><strong>cbar_title</strong> (<em>str</em>) – Text for color bar</p></li>
+<li><p><strong>dec</strong> (<em>float</em><em> (</em><em>optional</em><em>, </em><em>default : 0.</em><em>)</em>) – Direction of the measurement lines with respect to magnetic North
+in degrees, measured from N to E</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plot_image">
+<span class="sig-name descname"><span class="pre">plot_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Measured</span> <span class="pre">magnetic</span> <span class="pre">data'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Easting'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Northing'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rainbow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mincol1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxcol1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mincol2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxcol2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mincolg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxcolg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_flag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plot_image" title="Link to this definition">¶</a></dt>
+<dd><p>Plot maps of interpolated data of both sensors using imshow</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>title</strong> (<em>str</em><em>, </em><em>optional</em>) – Plot title for both sensor polts (the text “sensor n” is automatically
+added, n being sensor numnber). The default is “Measured magnetic data”.</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Text for x-axis. The default is “Easting”.</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Text for y-axis. The default is “Northing”.</p></li>
+<li><p><strong>percent</strong> (<em>float</em><em>, </em><em>optional</em>) – Scaling of color scale. Maximum value is percentile (1-percent),
+minimum value for percentile percent. The default is 0.01.</p></li>
+<li><p><strong>mincol1</strong> (<em>float</em><em>, </em><em>optional</em>) – value for lower end of color scale for sensor 1 [nT]</p></li>
+<li><p><strong>maxcol1</strong> (<em>float</em><em>, </em><em>optional</em>) – value for upper end of color scale for sensor 1 [nT]
+If mincol1==maxcol1, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>mincol2</strong> (<em>float</em><em>, </em><em>optional</em>) – value for lower end of color scale for sensor 2 [nT]</p></li>
+<li><p><strong>maxcol2</strong> (<em>float</em><em>, </em><em>optional</em>) – value for upper end of color scale for sensor 2 [nT]
+If mincol2==maxcol2, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>mincolg</strong> (<em>float</em><em>, </em><em>optional</em>) – value for lower end of color scale for vertical gradient [nT/m]</p></li>
+<li><p><strong>maxcolg</strong> (<em>float</em><em>, </em><em>optional</em>) – value for upper end of color scale for vertical gradient [nT/m]
+If mincolg==maxcolg, the color scale is calculated automatically based on
+quantiles (see “percent”)</p></li>
+<li><p><strong>c</strong> (<em>str</em><em>, </em><em>optional</em>) – Color map to be used. The default is “rainbow”.</p></li>
+<li><p><strong>grad_flag</strong> (<em>bool</em><em>, </em><em>optional</em><em>, </em><em>default: False</em>) – if True, 3 plots are shown on the screen: Sensor1, sensor2 and gradient.
+if False only the two sensors are plotted</p></li>
+<li><p><strong>dec</strong> (<em>float</em>) – Y direction with respect to geographic north (measured from N to E)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<em>matplotlib.figure</em>) – Figure used for plot.</p></li>
+<li><p><strong>ax</strong> (<em>matplotlib.axis</em>) – List of axes used for plots. ax has two entrances, one for each sensor</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.addMPL">
+<span class="sig-name descname"><span class="pre">addMPL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fig</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.addMPL" title="Link to this definition">¶</a></dt>
+<dd><p>Add widget to actual Figure
+Input: fig is the actually used Figure (matplotlib.figure.Figure object)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.rmMPL">
+<span class="sig-name descname"><span class="pre">rmMPL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.rmMPL" title="Link to this definition">¶</a></dt>
+<dd><p>Remove widget from actual Figure</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.plot.plotFloating">
+<span class="sig-name descname"><span class="pre">plotFloating</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wtitle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sizeh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">800</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sizev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mincol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxcol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rainbow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ptitle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.plot.plotFloating" title="Link to this definition">¶</a></dt>
+<dd><p>Plot one or several 2D arrays into floating window</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>numpy array</em>) – <p>Data to be plotted.
+The array my be 2D or 3D. If 3D, it is supposed that several figures
+should be plotted into the same window in different frames.
+If more than one plot is to be done, the thrid dimension contains
+the different data sets. Every data set must be 2D. Several data sets
+may be concatenated into data with the following commands:</p>
+<ul>
+<li><p>data = data1.reshape(nr,nc,1)</p></li>
+<li><p>data = np.concatenate((data,data2.reshape(nr,nc,1)),axis=2)</p></li>
+</ul>
+<p>data1 and data2 are arrays with shape (nr,nc) defined on regular grids.</p>
+</p></li>
+<li><p><strong>x</strong> (<em>numpy 1D float array</em>) – Positions of the columns</p></li>
+<li><p><strong>y</strong> (<em>numpy 1D float array</em>) – Positions of the rows</p></li>
+<li><p><strong>wtitle</strong> (<em>str optional</em><em>, </em><em>default: empty string</em>) – Title of floating window</p></li>
+<li><p><strong>sizeh</strong> (<em>float optional</em><em>,</em><em>default: 800</em>) – horizontal size of floating window.</p></li>
+<li><p><strong>sizev</strong> (<em>float optional</em><em>, </em><em>default: 500</em>) – vertical size of floating window</p></li>
+<li><p><strong>mincol</strong> (<em>float optional</em><em>, </em><em>default: 0</em>) – Minimum value of color scale</p></li>
+<li><p><strong>maxcol</strong> (<em>float optional</em><em>,  </em><em>default: 0</em>) – Maximum value of color scale.
+If mincol == maxcol,  and percent == 0, the limits of the color
+scale are minimum and maximum values of the data.</p></li>
+<li><p><strong>percent</strong> (<em>float optional:</em>) – If &gt;0, mincol and maxcol are calculated as quantiles (percent, 1-percent).</p></li>
+<li><p><strong>c</strong> (<em>str optional</em><em>, </em><em>default: &quot;rainbow&quot;</em>) – color scale to be used.</p></li>
+<li><p><strong>ptitle</strong> (<em>str</em><em>, </em><em>optional</em><em>, </em><em>default: empty string</em>) – May be a single string or a list of strings, where the length of the
+list must correspond to the length of the third dimension of data.</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Similar as ptitle for lables of horizontal axis</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Similar as ptitle for lables of vertical axis</p></li>
+<li><p><strong>clabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Similar as ptitle for lables of color bars</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>fig_float,ax_float</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Matplot values of figure and axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.newWindow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Pymagra.plotting.plotting.</span></span><span class="sig-name descname"><span class="pre">newWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1800</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ysize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1200</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Pymagra.plotting.plotting.newWindow" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">PyQt5.QtWidgets.QWidget</span></code></p>
+<p>This “window” is a QWidget. If it has no parent, it will appear as a
+free-floating window.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.newWindow.fig">
+<span class="sig-name descname"><span class="pre">fig</span></span><a class="headerlink" href="#Pymagra.plotting.plotting.newWindow.fig" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.newWindow.layout">
+<span class="sig-name descname"><span class="pre">layout</span></span><a class="headerlink" href="#Pymagra.plotting.plotting.newWindow.layout" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.newWindow.canvas">
+<span class="sig-name descname"><span class="pre">canvas</span></span><a class="headerlink" href="#Pymagra.plotting.plotting.newWindow.canvas" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pymagra.plotting.plotting.newWindow.toolbar">
+<span class="sig-name descname"><span class="pre">toolbar</span></span><a class="headerlink" href="#Pymagra.plotting.plotting.newWindow.toolbar" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Pymagra.plotting.plotting</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot"><code class="docutils literal notranslate"><span class="pre">plot</span></code></a><ul>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.fig"><code class="docutils literal notranslate"><span class="pre">plot.fig</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.main"><code class="docutils literal notranslate"><span class="pre">plot.main</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.grid_flag"><code class="docutils literal notranslate"><span class="pre">plot.grid_flag</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plotLin_flag"><code class="docutils literal notranslate"><span class="pre">plot.plotLin_flag</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.geography_flag"><code class="docutils literal notranslate"><span class="pre">plot.geography_flag</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.legend"><code class="docutils literal notranslate"><span class="pre">plot.legend</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.grad_data"><code class="docutils literal notranslate"><span class="pre">plot.grad_data</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.unit"><code class="docutils literal notranslate"><span class="pre">plot.unit</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.bar_or"><code class="docutils literal notranslate"><span class="pre">plot.bar_or</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.nticks"><code class="docutils literal notranslate"><span class="pre">plot.nticks</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.axfont"><code class="docutils literal notranslate"><span class="pre">plot.axfont</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.setClipPath"><code class="docutils literal notranslate"><span class="pre">plot.setClipPath()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.set_geography_flag"><code class="docutils literal notranslate"><span class="pre">plot.set_geography_flag()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.toggle_geography_flag"><code class="docutils literal notranslate"><span class="pre">plot.toggle_geography_flag()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plot_geography"><code class="docutils literal notranslate"><span class="pre">plot.plot_geography()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plot_lineaments"><code class="docutils literal notranslate"><span class="pre">plot.plot_lineaments()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plot_north"><code class="docutils literal notranslate"><span class="pre">plot.plot_north()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plot_sensor_triang"><code class="docutils literal notranslate"><span class="pre">plot.plot_sensor_triang()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plot_triang"><code class="docutils literal notranslate"><span class="pre">plot.plot_triang()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plot_sensor_image"><code class="docutils literal notranslate"><span class="pre">plot.plot_sensor_image()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plot_image"><code class="docutils literal notranslate"><span class="pre">plot.plot_image()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.addMPL"><code class="docutils literal notranslate"><span class="pre">plot.addMPL()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.rmMPL"><code class="docutils literal notranslate"><span class="pre">plot.rmMPL()</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.plot.plotFloating"><code class="docutils literal notranslate"><span class="pre">plot.plotFloating()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.newWindow"><code class="docutils literal notranslate"><span class="pre">newWindow</span></code></a><ul>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.newWindow.fig"><code class="docutils literal notranslate"><span class="pre">newWindow.fig</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.newWindow.layout"><code class="docutils literal notranslate"><span class="pre">newWindow.layout</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.newWindow.canvas"><code class="docutils literal notranslate"><span class="pre">newWindow.canvas</span></code></a></li>
+<li><a class="reference internal" href="#Pymagra.plotting.plotting.newWindow.toolbar"><code class="docutils literal notranslate"><span class="pre">newWindow.toolbar</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="../index.html"
+                          title="previous chapter">Pymagra.plotting</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="../../utilities/index.html"
+                          title="next chapter">Pymagra.utilities</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../../_sources/autoapi/Pymagra/plotting/plotting/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../utilities/index.html" title="Pymagra.utilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Pymagra.plotting"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">pymagra 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >API Reference</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" >Pymagra</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../index.html" >Pymagra.plotting</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pymagra.plotting.plotting</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Hermann Zeyen.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>
