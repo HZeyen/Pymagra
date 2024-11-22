@@ -11,16 +11,16 @@ description = "Data treatment for potential fields"
 authors = [{ name = "Hermann ZEYEN", email = "hermann.zeyen@universite-paris-saclay.fr" }]
 
 dependencies = [
-	"pathlib",
-	"datetime",
-	"scikit-learn",
-	"numpy",
-	"matplotlib",
+    "pathlib",
+    "datetime",
+    "scikit-learn",
+    "numpy",
+    "matplotlib",
 ]
 # The following packages should be included as dependencies, but give errors...
-#	"signal",
-#	"copy",
-#	"mpl_toolkits",
+#   "signal",
+#   "copy",
+#   "mpl_toolkits",
 
 classifiers = [
     'Development Status :: 3 - Alpha',
@@ -47,7 +47,7 @@ classifiers = [
 pymagra = "Pymagra.__main__:execute_script"
 
 [tool.setuptools]
-packages = ["Pymagra", "Pymagra.in_out", "Pymagra.plotting", "Pymagra.utilities"]
+packages = ["Pymagra", "Pymagra.in_out", "Pymagra.plotting", "Pymagra.utilities", "Pymagra.data", "Pymagra.inversion"]
 include-package-data = false
 
 [tool.setuptools.package-data]
