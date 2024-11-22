@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-last modified on Aug 28, 2024
+last modified on Nov 21, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
          University Paris-Saclay, France
@@ -30,18 +30,17 @@ import os
 from copy import deepcopy
 from datetime import datetime, date
 from signal import signal, SIGINT
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
-from matplotlib import colors
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from sklearn.linear_model import LinearRegression as LR
 import numpy as np
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from .in_out import io
-from .plotting.plotting import plot
-from .plotting.plotting import newWindow
-from .utilities.utilities import Utilities
+from .plotting.main_window import mainWindow
+from .plotting import floating_plots as FP
+from .utilities import utilities as u
 from .in_out.dialog import dialog
+from .data.data import DataContainer
+from .inversion.inver import inversion
+from .inversion.potential_prism import Prism_calc as PP
+
 
 class Main(QtWidgets.QWidget):
     """
@@ -54,59 +53,79 @@ class Main(QtWidgets.QWidget):
 
     Methods
     -------
-    __init__ : Initialization
-    readdata : Input data sets
-    getGeography : Get geography information (towns, geological borders...)
-    oneOfTwo : Extract one line out of two (for lines in alternating directions)
-    readBaseData : Input base station data
-    writeStn : Write treated data in Geometrics .stn format
-    writeDat : Write treated data in Geometrics Surfer format
-    saveBaseData : Write base station data into Geometrics .str file
-    original : Reset actual data to the original ones
-    plotOriginal : Plot original data set (but keep treated data as actual ones)
-    plotActual : Plot actual, treated data to screen
-    plot_gradient : Toggle on/off plotting of gradient data if there are
-    plot_geography : Toggle on/off plotting of geography data
-    plot_lineaments : Toggle on/off plotting of measured lineaments
-    plot_Line : Plot a lineament onto the data map
-    get_mouse_click (with method onClick); Wait for mouse click return position and type
-    setHelp : Set help text written at the base of the screen
-    changeColorScale : Change parameters for Color scale
-    plotBase : Plot base station data
-    plotMedian : Plot medians of all lines
-    zooming : (TODO)
-    zoomOut : (TODO)
-    zoomIn : (TODO)
-    zoomInitial : (TODO)
-    savePlot : Save actual plot into .png file
-    diurnal : Estimate diurnal variations from variation of line medians
-    clean : Eliminate outliers from data
-    justify_median : Justify medians of lines measured in opposite directions
-    justify_gauss : Justify gaussian distribution of lines in opposite directions
-    interpol : Interpolate data onto a regular grid
-    nanFill : Interpolate data at positions have nan-value
-    reducePole : Reduce magnetic data to the pole
-    log_spect : Calculate lograrithmic spectrum of a data series
-    fit2lines : Fit two slopes to a data series
-    min_max : Search all local minima and maxima in a vector
-    spector_line : Fit lines to lograithmic spectrum and calculate source depth
-    spector : Calculate 1D source depths from data spectrum
-    spector2D : Calculate 1D source depths from data spectrum on a 2D grid
-    tilt : Calculate tilt angle of 2D data set
-    continuation : Continue potential field data set upwards
-    analyticSignal : Calculate analytic signal and source depths
-    followLine : Follow the cursor and plot a straight line
-    eventFilter : (TODO) Event filter for keyboard strokes
-    Handler : Should handle exeptions - not really working
-    save_lineaments : Saves measured data lineaments into file
-    closeApp : Close application in an ordered way
+    - __init__ : Initialization
+    - readdata : Input data sets
+    - check_data : Check if magnetic data contain errors (mainly nulls)
+    - correct_time : Correct instrument time
+    - file_change : plot another already opened data file
+    - join_data : Join all available data sets into one common set.
+    - getGeography : Get geography information (towns, geological borders...)
+    - oneOfTwo : Extract one line out of two (for lines in alternating
+      directions)
+    - readBaseData : Input base station data
+    - writeStn : Write treated data in Geometrics .stn format
+    - writeDat : Write treated data in Geometrics Surfer format
+    - writeGXF : Write gridded data in GXF format
+    - saveBaseData : Write base station data into Geometrics .str file
+    - original : Reset actual data to the original ones
+    - plotOriginal : Plot original data set (but keep treated data as actual
+      ones)
+    - plotActual : Plot actual, treated data to screen
+    - plot_gradient : Toggle on/off plotting of gradient data if there are
+    - plot_geography : Toggle on/off plotting of geography data
+    - plot_lineaments : Toggle on/off plotting of measured lineaments
+    - plotLine : Wrapper for plot_Line
+    - plot_Line : Plot a lineament onto the data map
+    - changeColorScale : Change parameters for Color scale
+    - plotBase : Plot base station data
+    - plot_median : Plot medians of all lines
+    - zooming : (TODO)
+    - zoomOut : (TODO)
+    - zoomIn : (TODO)
+    - zoomInitial : (TODO)
+    - save_plot : Save actual plot into .png file
+    - diurnal : Estimate diurnal variations from variation of line medians
+    - clean : Eliminate outliers from data
+    - justify_median : Justify medians of lines measured in opposite directions
+    - justify_gauss : Justify gaussian distribution of lines in opposite
+      directions
+    - interpol : Interpolate data onto a regular grid
+    - nan_fill : Interpolate data at positions have nan-value
+    - reduce_pole : Reduce magnetic data to the pole
+    - log_spect : Calculate lograrithmic spectrum of a data series
+    - fit2lines : Fit two slopes to a data series
+    - min_max : Search all local minima and maxima in a vector
+    - spector_line : Fit lines to lograithmic spectrum and calculate source
+      depth
+    - spector : Calculate 1D source depths from data spectrum
+    - spector2D : Calculate 1D source depths from data spectrum on a 2D grid
+    - tilt : Calculate tilt angle of 2D data set
+    - continuation : Continue potential field data set upwards
+    - analytic_signal : Calculate analytic signal and source depths
+    - inver2D : Do 2.5D inversion
+    - inver3D : Do 3D inversion
+    - synthetic_model : Define synthetic model and calculate its effect
+    - Handler : Should handle exeptions - not really working
+    - save_lineaments : Saves measured data lineaments into file
+    - closeApp : Close application in an ordered way
+
     """
 
     def __init__(self, dir0=None):
         super().__init__()
 
-        self.function = "main"
+        try:
+            os.chdir(dir0)
+        except NameError:
+            pass
         self.data_read = False
+        self.base_files = []
+        self.dat = []
+        self.dat_ori = []
+        self.data_files = []
+        self.file_types = []
+        self.data_types = []
+        self.config_file = []
         self.percent = 0.01
         self.mincol1 = 0.0
         self.maxcol1 = 0.0
@@ -119,6 +138,9 @@ class Main(QtWidgets.QWidget):
         self.height = 1.3
         self.gradient_flag = True
         self.inter_flag = False
+        self.config_flag = False
+        self.nan_flag = False
+        self.geography_flag = False
         self.n_blocks = 0
         self.grid_flag = True
         self.nlineaments = 0
@@ -135,13 +157,12 @@ class Main(QtWidgets.QWidget):
         self.treatments["odd lines"] = False
         self.treatments["even lines"] = False
         self.treatments["up"] = False
-        self.actual_plotted_file = 0
-        self.u = Utilities(self)
         self.line_choice = "all"
         self.dir0 = dir0
         self.fig_base = None
         self.inclination = 62.0
         self.declination = 0.0
+        self.field_flag = False
         self.geography = {}
         self.base = None
         self.fig_line = None
@@ -194,13 +215,15 @@ class Main(QtWidgets.QWidget):
         self.dz = 0.0
         self.sensor1_inter = []
         self.sensor2_inter = []
+        self.sensor1_back = []
+        self.sensor2_back = []
+        self.sensor1_fill = []
+        self.sensor2_fill = []
         self.grad_inter = []
+        self.grad_fill = []
         self.x_inter = []
         self.y_inter = []
         self.z_inter = []
-        self.sensor1_fill = []
-        self.sensor2_fill = []
-        self.grad_fill = []
         self.mask1 = []
         self.mask2 = []
         self.start = [0.0, 0.0]
@@ -213,10 +236,10 @@ class Main(QtWidgets.QWidget):
         self.cidpress = None
         # string_keys gives the number of keys in data that are not numbers
         self.string_keys = 0
-        #
-        self.w = plot(self)
+        self.w = mainWindow(self)
 
         # Input data
+        self.actual_plotted_file = 0
         self.readData(dir0)
         x = self.dat[0].data[0]["x"]
         y = self.dat[0].data[0]["y"]
@@ -243,21 +266,25 @@ class Main(QtWidgets.QWidget):
         self.w.addData.triggered.connect(self.readData)
         self.w.saveSTN.triggered.connect(self.writeStn)
         self.w.saveDat.triggered.connect(self.writeDat)
+        self.w.saveGXF.triggered.connect(self.writeGXF)
         self.w.readBase.triggered.connect(self.readBaseData)
         self.w.save_base.triggered.connect(self.saveBaseData)
-        self.w.Save_plot.triggered.connect(self.savePlot)
+        self.w.Save_plot.triggered.connect(self.save_plot)
         self.w.geography.triggered.connect(self.getGeography)
         self.w.quitAction.triggered.connect(self.close_app)
         # Actions for menu Display
         self.w.originalPlot.triggered.connect(self.plotOriginal)
         self.w.actualPlot.triggered.connect(self.plotActual)
-        self.w.plotLine.triggered.connect(self.plot_Line)
+        self.w.change_file.triggered.connect(self.file_change)
+        self.w.join.triggered.connect(self.join_data)
+        self.w.plotLine.triggered.connect(self.plot_line)
         self.w.basePlot.triggered.connect(self.plotBase)
-        self.w.medianPlot.triggered.connect(self.plotMedian)
+        self.w.medianPlot.triggered.connect(self.plot_median)
         self.w.plotGradient.triggered.connect(self.plot_gradient)
         self.w.plotGeo.triggered.connect(self.plot_geography)
         self.w.plotGrid.triggered.connect(self.plot_grid)
         self.w.plotLineaments.triggered.connect(self.plot_lineaments)
+        self.w.fill.triggered.connect(self.nan_fill)
         # self.w.zoom.triggered.connect(self.zooming)
         # self.w.zoom_Out.triggered.connect(self.zoomOut)
         # self.w.zoom_In.triggered.connect(self.zoomIn)
@@ -266,50 +293,40 @@ class Main(QtWidgets.QWidget):
         self.w.secondLine.triggered.connect(self.oneOfTwo)
         # Actions for menu Utilities
         self.w.originalData.triggered.connect(self.original)
-        self.w.diurnalCorrection.triggered.connect(self.diurnal)
         self.w.cleanData.triggered.connect(self.clean)
+        self.w.timeCorrect.triggered.connect(self.correct_time)
+        # self.w.adjust.triggered.connect(self.block_adjust)
+        self.w.diurnalCorrection.triggered.connect(self.diurnal)
         self.w.medianJustify.triggered.connect(self.justify_median)
         self.w.gaussJustify.triggered.connect(self.justify_gauss)
         self.w.interpolate.triggered.connect(self.interpol)
-        self.w.fill.triggered.connect(self.nanFill)
-        self.w.poleReduction.triggered.connect(self.reducePole)
+        self.w.poleReduction.triggered.connect(self.reduce_pole)
         self.w.lineFFT.triggered.connect(self.spector)
         self.w.Spector_2D.triggered.connect(self.spector2D)
         self.w.tiltAngle.triggered.connect(self.tilt)
         self.w.prolongation.triggered.connect(self.continuation)
-        self.w.analytic.triggered.connect(self.analyticSignal)
+        self.w.analytic.triggered.connect(self.analytic_signal)
+        # Actions for menu Inversion
+        self.w.inv2D.triggered.connect(self.inver2D)
+        self.w.inv3D.triggered.connect(self.inver3D)
+        self.w.synthetic.triggered.connect(self.synthetic_model)
 
-        # Check whether file "lineaments.dat" exists containing magnetic or gravity
-        # lineaments picked from tilt angle maps. If so, create dictionary xith all
-        # lineament information.
+        # Check whether file "lineaments.dat" exists containing magnetic or
+        # gravity lineaments picked from tilt angle maps. If so, create
+        # dictionary xith all lineament information.
         if os.path.isfile("lineaments.dat"):
-            with open("lineaments.dat", "r", encoding="utf-8") as fi:
-                lines = fi.readlines()
-            il = 0
-            self.nlineaments = 0
-            x = []
-            y = []
-            while True:
-                if lines[il][0] == "#":
-                    if len(x) > 0:
-                        self.lineaments[self.nlineaments]["x"] = np.array(x)
-                        self.lineaments[self.nlineaments]["y"] = np.array(y)
-                        x = []
-                        y = []
-                    if lines[il][:4] == "#END":
-                        break
-                    self.nlineaments += 1
-                    self.lineaments[self.nlineaments] = {}
-                    self.lineaments[self.nlineaments]["type"] = lines[il][1:-1]
-                    il += 1
-                else:
-                    nums = lines[il].split()
-                    x.append(float(nums[0]))
-                    y.append(float(nums[1]))
-                    il += 1
+            self.lineaments = io.read_lineaments("lineaments.dat")
+            self.nlineaments = len(self.lineaments)
             self.w.plotLineaments.setEnabled(True)
             self.w.plotLin_flag = True
             self.w.lineaments = self.lineaments
+            for d in self.dat:
+                d.lineaments = self.lineaments
+                d.lineament_flag = True
+                d.plotLin_flag = True
+            self.data.lineaments = self.lineaments
+            self.data.lineament_flag = True
+            self.data.plotLin_flag = True
         # Intercept CTL-C to exit in a controlled way
         signal(SIGINT, self.Handler)
         self.w.grad_flag = False
@@ -321,8 +338,8 @@ class Main(QtWidgets.QWidget):
             self.unit = "mGal"
         # Plot data
         self.fig, self.ax = self.w.plot_triang(
-            self.dat[self.actual_plotted_file].data,
-            title=f"Original measured {self.data_types[0]} data",
+            self.data,
+            title=f"{self.data.data['title']}",
             percent=self.percent,
             mincol1=self.mincol1,
             maxcol1=self.maxcol1,
@@ -345,33 +362,100 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        self.data_files, self.file_types, self.data_types, self.dir0 = io.get_files(
-            dir0
-        )
-        self.base_files = []
-        self.dat = []
-        for i, f in enumerate(self.data_files):
-            self.dat.append(io.Data())
-            if self.file_types[i] == "GEOMETRICS":
-                self.dat[-1].read_geometrics(f)
+        df, ft, dt, self.dir0 = io.get_files(dir0)
+        self.data_files += df
+        self.file_types += ft
+        self.data_types += dt
+        ld = len(self.dat)
+        # Define the first read data file as active one
+        self.actual_plotted_file = ld
+        for i, f in enumerate(df):
+            fconfig = os.path.basename(f)
+            j = fconfig.rfind(".")
+            # Check whether there is a configuration file for each data file
+            if j > 0:
+                fconfig = fconfig[:j] + ".config"
+            else:
+                fconfig += ".config"
+            self.config_file.append(fconfig)
+            tcorr_flag = False
+            # If there is, read its content
+            if os.path.isfile(fconfig):
+                self.config_flag = True
+                with open(fconfig, "r") as fi:
+                    lines = fi.readlines()
+                self.title_text = lines[1][:-1]
+                self.line_dec = float(lines[2])
+                self.height_sens1 = float(lines[3])
+                self.height_sens2 = float(lines[4])
+                self.sensor_disposition = int(lines[5])
+                self.strength = float(lines[6])
+                self.inclination = float(lines[7])
+                self.declination = float(lines[8])
+                if len(lines) > 9:
+                    tcorr_flag = True
+                    tcorr = float(lines[9])
+            else:
+                self.config_flag = False
+            self.n_blocks += 1
+
+            # Create a data class for the actual file
+            self.dat.append(DataContainer(self.n_blocks))
+            self.dat[-1].set_values(file=df[i], ftype=ft[i], dtype=dt[i])
+
+            # Read Geometics (*.stn) file
+            if ft[i] == "GEOMETRICS":
+                if len(self.dat) > 1:
+                    self.dat[-1].set_values(
+                        line_declination=self.dat[-2].line_declination,
+                        h_sensor=self.dat[-2].h1_sensor,
+                        h2_sensor=self.dat[-2].h2_sensor,
+                        d_sensor=self.dat[-2].d_sensor,
+                        dispo=self.dat[-2].dispo,
+                    )
+                if self.config_flag:
+                    self.dat[-1].read_geometrics(
+                        f,
+                        self.height_sens1,
+                        self.height_sens2,
+                        self.sensor_disposition,
+                        self.line_dec,
+                        self.title_text,
+                    )
+                else:
+                    self.dat[-1].read_geometrics(f)
                 self.w.saveSTN.setEnabled(True)
                 self.w.fill.setEnabled(True)
-                self.w.poleReduction.setEnabled(True)
-            elif self.file_types[i] == "GXF":
-                self.dat[-1].read_gxf(f)
+            # Read GXF format file
+            elif ft[i] == "GXF":
+                if self.config_flag:
+                    self.dat[-1].read_gxf(
+                        f, self.height_sens1, self.line_dec, self.title_text
+                    )
+                else:
+                    self.dat[-1].read_gxf(f)
                 self.gradient_flag = False
                 self.w.fill.setEnabled(True)
                 self.w.plotGradient.setEnabled(False)
-                if self.data_types[i] == "magnetic":
-                    self.w.poleReduction.setEnabled(True)
-            elif self.file_types[i] == "BRGM":
+            # Read BRGM aeromagnetic data
+            elif ft[i] == "BRGM":
                 self.dat[-1].read_BRGM_flight(f)
                 self.gradient_flag = False
                 self.w.fill.setEnabled(True)
                 self.w.plotGradient.setEnabled(False)
-                self.w.poleReduction.setEnabled(True)
-            elif self.file_types[i] == "MGWIN":
-                self.dat[-1].read_txt(f)
+                self.w.poleReduction.setEnabled(False)
+            # Read *.dat data (usually coming from program MGWIN)
+            elif ft[i] == "MGWIN":
+                if self.config_flag:
+                    self.dat[-1].read_txt(
+                        f,
+                        self.height_sens1,
+                        self.height_sens2,
+                        self.line_dec,
+                        self.title_text,
+                    )
+                else:
+                    self.dat[-1].read_txt(f)
                 if self.dat[-1]["grad_data"]:
                     self.gradient_flag = True
                     self.w.plotGradient.setEnabled(True)
@@ -379,28 +463,438 @@ class Main(QtWidgets.QWidget):
                     self.gradient_flag = False
                     self.w.plotGradient.setEnabled(False)
                 self.w.fill.setEnabled(True)
-                if self.data_types[i] == "magnetic":
-                    self.w.poleReduction.setEnabled(True)
-            self.n_blocks += 1
-            self.dat[-1].data["type"] = self.data_types[i]
-            if "magnetic" in self.data_types:
-                self.inclination, self.declination = io.get_mag_field()
-                self.inclination_ori = self.inclination
-                self.declination_ori = self.declination
-        self.dat_ori = deepcopy(self.dat)
-        data_keys = list(self.dat[0].data.keys())
-        self.height = self.dat[0].data["height"]
+            self.dat[-1].set_values(
+                block=self.n_blocks,
+                block_name=f"{os.path.basename(df[i])}",
+                typ=self.data_types[i],
+                inter_flag=False,
+                treatments=self.treatments,
+                fconfig=fconfig,
+            )
+            if tcorr_flag:
+                self.dat[-1].correct_time(dt=tcorr)
+                self.w.timeCorrect.setEnabled(False)
+            self.dat_ori.append(deepcopy(self.dat[-1]))
+            self.check_data(self.dat[-1].data, f)
+            # If data are magnetic, no configuration file exits and Earth's field
+            #   properties were not yet read, ask now for these properties
+            line_dir = self.dat[-1].data["line_declination"]
+            if "m" in self.data_types[i]:
+                if not self.field_flag and not self.config_flag:
+                    self.earth = io.get_mag_field(line_dir)
+                    self.inclination = self.earth.inc
+                    self.declination = self.earth.dec
+                    self.strength = self.earth.f
+                    self.field_flag = True
+                # If a configuration file exists but Earth's field properties were not yet
+                #   defined, create earthMag calss and store the field data.
+                elif not self.field_flag:
+                    self.earth = io.get_mag_field(
+                        line_dir, self.strength, self.inclination, self.declination
+                    )
+                    self.field_flag = True
+            else:
+                self.earth = io.get_mag_field(line_dir, 0.0, 0.0, 0.0)
+            self.inclination_ori = self.inclination
+            self.declination_ori = self.declination
+            self.earth_ori = deepcopy(self.earth)
+            self.dat[-1].set_values(earth=self.earth)
+            # If the configuration file did not yet exist, create it now with the data
+            #   read in via the dialog boxes
+            if not self.config_flag:
+                with open(fconfig, "w") as fo:
+                    fo.write(f"{self.data_types[i]}\n")
+                    fo.write(f'{self.dat[-1].data["title"]}\n')
+                    fo.write(f'{self.dat[-1].data["line_declination"]}\n')
+                    fo.write(f'{self.dat[-1].data["height"]}\n')
+                    if self.dat[-1].data["grad_data"]:
+                        self.height2 = self.dat[-1].data["height2"]
+                        self.dist_sensors = self.dat[-1].data["height"] - self.height2
+                    else:
+                        self.height2 = self.dat[-1].data["height"]
+                        self.dist_sensors = 0.0
+                    fo.write(f"{self.height2}\n")
+                    fo.write(f'{self.dat[-1].data["dispo"]}\n')
+                    fo.write(f"{self.earth.f}\n")
+                    fo.write(f"{self.earth.inc}\n")
+                    dec = self.earth.dec
+                    fo.write(f'{dec+self.dat[-1].data["line_declination"]}\n')
+        if len(self.dat) > 1:
+            self.w.change_file.setEnabled(True)
+            self.w.join.setEnabled(True)
+        self.data = deepcopy(self.dat[self.actual_plotted_file])
+        self.height = self.data.data["height"]
         self.string_keys = 0
+        data_keys = list(self.data.data.keys())
         for i, k in enumerate(data_keys):
             if isinstance(k, (str)):
                 break
         self.string_keys = len(data_keys) - i
+        # Plot data from active file
+        if ld > 0:
+            self.plotActual()
+
+    def check_data(self, data, file):
+        """
+        Check magnetic data for consitency
+
+        Data acquired with PPM or Cs/Rb magnetometers may have null measurement
+        if the sensors are placed parallel or perpendicular to the Earth's
+        field. Program checks whether the minimum or maximum values in a data
+        set are smaller/larger than the median by more than 20000 nT and if so,
+        it gives a warning message proposing to clean up the data using
+        Utilities -> Clean data before any other treatment.
+
+        Parameters
+        ----------
+        data : dictionary
+            Contains all data of a data set. entries "s1", "s2" and "grad_data"
+            are used
+        file : str
+            File name of the data set (only used in the warning message).
+
+        Returns
+        -------
+        None.
+
+        """
+        vmin1 = 1000000.0
+        vmax1 = -1000000.0
+        vmin2 = 1000000.0
+        vmax2 = -1000000.0
+        vmed = data[0]["median1"]
+        err_flag = False
+        grad_test = data["grad_data"]
+        for key, val in data.items():
+            if isinstance(key, (str)):
+                break
+            vmin1 = min(val["s1"].min(), vmin1)
+            vmax1 = max(val["s1"].max(), vmax1)
+            if grad_test:
+                vmin2 = min(val["s2"].min(), vmin2)
+                vmax2 = max(val["s2"].max(), vmax2)
+        if vmax1 > vmed + 20000.0 or vmin1 < vmed - 20000.0:
+            err_flag = True
+        if grad_test:
+            if vmax2 > vmed + 20000.0 or vmin2 < vmed - 20000.0:
+                err_flag = True
+        if err_flag:
+            if grad_test:
+                _ = QtWidgets.QMessageBox.warning(
+                    None,
+                    "Warning",
+                    f"File {file}:\n\n"
+                    + f"Sensor 1: min: {vmin1:0.2f}, max: {vmax1:0.2f}"
+                    + f"\nSensor 2: min: {vmin2:0.2f}, max: {vmax2:0.2f}"
+                    + "\n\nConsider cleaning up data as first step.",
+                    QtWidgets.QMessageBox.Close,
+                    QtWidgets.QMessageBox.Close,
+                )
+            else:
+                _ = QtWidgets.QMessageBox.warning(
+                    None,
+                    "Warning",
+                    f"File {file}:\n\n"
+                    + f"Data: min: {vmin1:0.2f}, max: {vmax1:0.2f}"
+                    + "\n\nConsider cleaning up data as first step.",
+                    QtWidgets.QMessageBox.Close,
+                    QtWidgets.QMessageBox.Close,
+                )
+
+    def correct_time(self, dt=None):
+        """
+        Wrapper for measurement time correction
+
+        Parameters
+        ----------
+        dt : float, optional, Default: None
+            Time in seconds to be added to the actual time. If None, dt is
+            asked for interactively.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.data.correct_time(dt)
+
+    def file_change(self):
+        """
+        Choose another file to be represented and treated.
+
+        Dialogue box presents a list of available files other than the one
+        actually on the screen and allows to choose by clicking a radio button.
+        Clicking on Cancel keeps the actual data.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.dat[self.actual_plotted_file] = deepcopy(self.data)
+        labels = [[]]
+        file_nr = []
+        for i, d in enumerate(self.dat):
+            if i == self.actual_plotted_file:
+                continue
+            labels[0].append(f"{d.data['block_name']}")
+            file_nr.append(i)
+        results, ok_button = dialog(labels, "r", "0", title="choose data file")
+        if not ok_button:
+            return None
+        self.actual_plotted_file = file_nr[int(results[0])]
+        self.data = deepcopy(self.dat[self.actual_plotted_file])
+        self.inter_flag = self.data.inter_flag
+        if self.inter_flag:
+            self.x_inter = np.copy(self.data.x_inter)
+            self.y_inter = np.copy(self.data.y_inter)
+            self.sensor1_inter = np.copy(self.data.sensor1_inter)
+            if self.data.data["grad_data"]:
+                self.sensor2_inter = np.copy(self.data.sensor2_inter)
+                self.grad_inter = np.copy(self.data.grad_inter)
+        self.treatments = deepcopy(self.data.treatments)
+        self.plotActual()
+
+    def join_data(self):
+        """
+        Joins al available data sets into one common data set
+
+        All data must have the same data type (magnetic vs gravity) and be
+        located in the same coordinate system. If the different data blocks are
+        not contiguous in space, program will interpolate meaningless "data".
+
+        The original data sets are maintained such that using file_change, one
+        may return to one of the smaller data sets. If later a new data set is
+        added and data are joint again, the joint data set is excluded.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.dat[self.actual_plotted_file] = deepcopy(self.data)
+        nbk = len(self.dat)
+        self.n_blocks += 1
+        self.dat.append(DataContainer(self.n_blocks))
+        nlines = 0
+        blkn = "blocks"
+        self.dat[-1].data = deepcopy(self.dat[0].data)
+        for key, val in self.dat[0].data.items():
+            if isinstance(key, str):
+                del self.dat[-1].data[key]
+        pos_lines = []
+        blkn = f"{blkn} {self.dat[0].data['block']}"
+        for key, val in self.dat[0].data.items():
+            if isinstance(key, (str)):
+                break
+            if val["direction"] in ("N", "S", 0.0, 180.0):
+                pos_lines.append(np.median(val["x"]))
+            else:
+                pos_lines.append(np.median(val["y"]))
+        nlines = len(pos_lines)
+        self.treatments = deepcopy(self.dat[0].treatments)
+        for i, d in enumerate(self.dat[1:-1]):
+            if d.treatments != self.treatments:
+                _ = QtWidgets.QMessageBox.warning(
+                    None,
+                    "Warning",
+                    f"Data set {d.data['block']}:\n\n"
+                    + "Data treatments are not the same as in other blocks\n\n"
+                    + "All blocks must have been treated in the same way "
+                    + "before joining\n\nJoin data sets is aborted",
+                    QtWidgets.QMessageBox.Close,
+                    QtWidgets.QMessageBox.Close,
+                )
+                self.n_blocks -= 1
+                del self.dat[-1]
+                return
+            if i == nbk:
+                break
+            # Skip already joint data sets (they contain the character "+" in their name)
+            if "+" in d.data["block_name"]:
+                continue
+            blkn = f"{blkn}+{d.data['block']}"
+            self.dat[-1].xmin = min(d.xmin, self.dat[-1].xmin)
+            self.dat[-1].xmax = max(d.xmax, self.dat[-1].xmax)
+            self.dat[-1].ymin = min(d.ymin, self.dat[-1].ymin)
+            self.dat[-1].ymax = max(d.ymax, self.dat[-1].ymax)
+            for key, val in d.data.items():
+                add_flag = False
+                if isinstance(key, (str)):
+                    break
+                if val["direction"] in ("N", "S", 0.0, 180.0):
+                    pos_line = np.median(val["x"])
+                else:
+                    pos_line = np.median(val["y"])
+                for il, p in enumerate(pos_lines):
+                    if np.isclose(pos_line, p):
+                        add_flag = True
+                        break
+                if add_flag:
+                    self.dat[-1].data[il]["x"] = np.concatenate(
+                        (self.dat[-1].data[il]["x"], val["x"])
+                    )
+                    self.dat[-1].data[il]["y"] = np.concatenate(
+                        (self.dat[-1].data[il]["y"], val["y"])
+                    )
+                    if val["direction"] in ("N", "S", 0.0, 180.0):
+                        index = np.argsort(self.dat[-1].data[il]["y"])
+                    else:
+                        index = np.argsort(self.dat[-1].data[il]["x"])
+                    self.dat[-1].data[il]["x"] = self.dat[-1].data[il]["x"][index]
+                    self.dat[-1].data[il]["y"] = self.dat[-1].data[il]["y"][index]
+                    self.dat[-1].data[il]["z"] = np.concatenate(
+                        (self.dat[-1].data[il]["z"], val["z"])
+                    )[index]
+                    self.dat[-1].data[il]["s1"] = np.concatenate(
+                        (self.dat[-1].data[il]["s1"], val["s1"])
+                    )[index]
+                    self.dat[-1].data[il]["s2"] = np.concatenate(
+                        (self.dat[-1].data[il]["s2"], val["s2"])
+                    )[index]
+                    self.dat[-1].data[il]["time"] = np.concatenate(
+                        (self.dat[-1].data[il]["time"], val["time"])
+                    )[index]
+                    if self.dat[-1].data[il]["direction"] in ("N", "S", 0.0, 180.0):
+                        _, index = np.unique(
+                            self.dat[-1].data[il]["y"], return_index=True
+                        )
+                    else:
+                        _, index = np.unique(
+                            self.dat[-1].data[il]["x"], return_index=True
+                        )
+                    self.dat[-1].data[il]["x"] = self.dat[-1].data[il]["x"][index]
+                    self.dat[-1].data[il]["y"] = self.dat[-1].data[il]["y"][index]
+                    self.dat[-1].data[il]["z"] = self.dat[-1].data[il]["z"][index]
+                    self.dat[-1].data[il]["s1"] = self.dat[-1].data[il]["s1"][index]
+                    self.dat[-1].data[il]["s2"] = self.dat[-1].data[il]["s2"][index]
+                    self.dat[-1].data[il]["time"] = self.dat[-1].data[il]["time"][index]
+                else:
+                    self.dat[-1].data[nlines] = deepcopy(val)
+                    nlines += 1
+                    pos_lines.append(pos_line)
+
+            self.dat[-1].sensor1 = np.concatenate((self.dat[-1].sensor1, d.sensor1))
+            self.dat[-1].sensor2 = np.concatenate((self.dat[-1].sensor2, d.sensor2))
+            self.dat[-1].x = np.concatenate((self.dat[-1].x, d.x))
+            self.dat[-1].y = np.concatenate((self.dat[-1].y, d.y))
+            self.dat[-1].z = np.concatenate((self.dat[-1].z, d.z))
+            self.dat[-1].topo = np.concatenate((self.dat[-1].topo, d.topo))
+            self.dat[-1].time = np.concatenate((self.dat[-1].time, d.time))
+        for key, val in self.dat[0].data.items():
+            if isinstance(key, (str)):
+                self.dat[-1].data[key] = deepcopy(self.dat[0].data[key])
+        self.dat[-1].grad_data = self.dat[0].data["grad_data"]
+        self.dat[-1].data["block"] = self.n_blocks
+        self.dat[-1].data["block_name"] = blkn
+        self.dat[-1].data["title"] += f", {blkn}"
+        self.dat[-1].data["type"] = self.data_types[0]
+        self.dat[-1].line_declination = self.dat[0].line_declination
+        self.dat[-1].h_sensor = self.dat[0].h1_sensor
+        self.dat[-1].d_sensor = self.dat[0].d_sensor
+        self.dat[-1].dispo = self.dat[0].dispo
+        self.dat[-1].data["grad_data"] = self.dat[0].data["grad_data"]
+        self.dat[-1].data["year"] = self.dat[0].data["year"]
+        self.dat[-1].data["height"] = self.dat[0].data["height"]
+        self.dat[-1].data["line_declination"] = self.dat[0].data["line_declination"]
+        if self.dat[-1].data["grad_data"]:
+            self.dat[-1].data["height2"] = self.dat[0].data["height2"]
+            self.dat[-1].data["d_sensor"] = self.dat[0].data["d_sensor"]
+            self.dat[-1].inter_flag = False
+        if self.dat[0].inter_flag:
+            self.join_gridded()
+        self.dat[-1].treatments = deepcopy(self.treatments)
+        self.dat_ori.append(deepcopy(self.dat[-1]))
+        self.data_types.append(self.data_types[0])
+        self.file_types.append(self.file_types[0])
+        self.data_files.append(self.dat[-1].data["block_name"])
+        self.data = deepcopy(self.dat[-1])
+        self.data.prepare_gdata(original_fill=True)
+        self.w.join.setEnabled(False)
+        self.w.adjust.setEnabled(True)
+        self.actual_plotted_file = len(self.dat) - 1
+        self.plotActual()
+
+    def join_gridded(self):
+        self.dat[self.actual_plotted_file] = deepcopy(self.data)
+        xmin = self.dat[0].x_inter.min()
+        xmax = self.dat[0].x_inter.max()
+        ymin = self.dat[0].y_inter.min()
+        ymax = self.dat[0].y_inter.max()
+        self.dx = self.dat[0].x_inter[1] - self.dat[0].x_inter[0]
+        self.dy = self.dat[0].y_inter[1] - self.dat[0].y_inter[0]
+        for i, d in enumerate(self.dat[1:-1]):
+            if "+" in d.data["block_name"]:
+                continue
+            if not d.inter_flag:
+                _ = QtWidgets.QMessageBox.warning(
+                    None,
+                    "Warning",
+                    f"Data set {d.data['block']} has not been gridded"
+                    + "Interpolate the joint data set but be aware that\nif "
+                    + "there are areas without data,\nthey may be interpolated"
+                    + "with meaningless data.",
+                    QtWidgets.QMessageBox.Close,
+                    QtWidgets.QMessageBox.Close,
+                )
+                return
+            xmin = min(xmin, d.x_inter.min())
+            xmax = max(xmax, d.x_inter.max())
+            ymin = min(ymin, d.y_inter.min())
+            ymax = max(ymax, d.y_inter.max())
+        self.x_inter = np.arange(xmin, xmax + self.dx / 2.0, self.dx)
+        self.y_inter = np.arange(ymin, ymax + self.dy / 2.0, self.dy)
+        nx = len(self.x_inter)
+        ny = len(self.y_inter)
+        self.sensor1_inter = np.zeros((ny, nx))
+        self.sensor1_inter[:, :] = np.nan
+        if self.dat[-1].data["grad_data"]:
+            self.sensor2_inter = np.zeros((ny, nx))
+            self.sensor2_inter[:, :] = np.nan
+        for i, d in enumerate(self.dat[:-1]):
+            dx = d.x_inter[1] - d.x_inter[0]
+            dy = d.y_inter[1] - d.y_inter[0]
+            if not (np.isclose(dx, self.dx) and np.isclose(dy, self.dy)):
+                _ = QtWidgets.QMessageBox.warning(
+                    None,
+                    "Warning",
+                    f"Data set {d.data['block']}:\n\nGrid step is not like "
+                    + f"others:\ndx = {dx}; required: {self.dx}\n"
+                    + f"dy = {dy}; required: {self.dy}\n\n"
+                    + "Interpolate all blocks with the same grid step and try"
+                    + "again.\n\nJoin data sets is aborted",
+                    QtWidgets.QMessageBox.Close,
+                    QtWidgets.QMessageBox.Close,
+                )
+                self.n_blocks -= 1
+                del self.dat[-1]
+                return
+            nx1 = int((d.x_inter.min() - xmin) / self.dx)
+            nx2 = nx1 + len(d.x_inter)
+            ny1 = int((d.y_inter.min() - ymin) / self.dy)
+            ny2 = ny1 + len(d.y_inter)
+            self.sensor1_inter[ny1:ny2, nx1:nx2] = np.copy(d.sensor1_inter)
+            if self.dat[-1].data["grad_data"]:
+                self.sensor2_inter[ny1:ny2, nx1:nx2] = np.copy(d.sensor2_inter)
+        self.dat[-1].x_inter = np.copy(self.x_inter)
+        self.dat[-1].y_inter = np.copy(self.y_inter)
+        self.dat[-1].sensor1_inter = np.copy(self.sensor1_inter)
+        if self.dat[-1].data["grad_data"]:
+            self.grad_inter = (self.sensor2_inter - self.sensor1_inter) / self.dat[
+                -1
+            ].data["d_sensor"]
+            self.dat[-1].sensor2_inter = np.copy(self.sensor2_inter)
+            self.dat[-1].grad_inter = np.copy(self.grad_inter)
+        self.dat[-1].inter_flag = True
+        self.inter_flag = True
+        self.data = deepcopy(self.dat[-1])
+        self.data.prepare_gdata(original_fill=True)
 
     def getGeography(self):
         """
         Ask for file containing geography data, read data and plot them onto
         data map.
-        
+
         Geography file has the following form:
 
         #Keyword (may be "#LINE", "#POINT" or "#END")
@@ -431,14 +925,21 @@ class Main(QtWidgets.QWidget):
             print("getGeograpgy: No files read")
             return
         self.geography = io.read_geography_file(files[0][0])
+        for d in self.dat:
+            d.set_values(geography=self.geography)
+            d.set_values(geography_flag=True)
+        self.data.set_values(geography=self.geography)
+        self.data.set_values(geography_flag=True)
         self.w.set_geography_flag(True)
+        self.geography_flag = True
         self.w.plotGeo.setEnabled(True)
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
     def oneOfTwo(self):
         """
-        Extract every second line starting with line 1 (odd lines) or line 2 (even lines)
-        May be useful is there is a strong directional effect in magnetic data
+        Extract every second line starting with line 1 (odd lines) or line 2
+        (even lines). May be useful is there is a strong directional effect in
+        magnetic data
 
         Returns
         -------
@@ -458,7 +959,7 @@ class Main(QtWidgets.QWidget):
             c = int(results[1])
             if self.treatments["odd lines"]:
                 self.treatments["odd lines"] = False
-                self.u.extract(choice[c])
+                u.extract(self.data, choice[c])
                 if c == 0:
                     self.treatments["even lines"] = True
                 else:
@@ -474,10 +975,11 @@ class Main(QtWidgets.QWidget):
                     self.treatments["odd lines"] = True
                 else:
                     self.treatments["even lines"] = True
-            self.u.extract(choice[c])
+            u.extract(self.data, choice[c])
+            self.data.treatments = deepcopy(self.treatments)
         else:
             return
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
     def readBaseData(self):
         """
@@ -492,101 +994,54 @@ class Main(QtWidgets.QWidget):
         if len(data_files) > 0:
             for f in data_files:
                 self.base_files.append(f)
-                self.base = io.Data()
-                self.base.read_base(f, self.dat[self.actual_plotted_file].data["year"])
+                self.base = DataContainer(0)
+                self.base.read_base(f, self.data.data["year"])
             self.w.basePlot.setEnabled(True)
             self.plotBase()
-
-    def getDateString(self):
-        """
-        Gets date and time of execution of the function
-
-        Returns
-        -------
-        date and time: str
-            Date and time are stored as YYYY-MM-DD_hh-mm-ss
-
-        Is used to define output names where the text is standard but time of
-        creation allows distinguishing.
-
-        """
-        now = datetime.now()
-        c_time = now.strftime("%H-%M-%S")
-        today = date.today()
-        d = today.strftime("%Y-%m-%d")
-        return f"{d}_{c_time}"
 
     def writeStn(self):
         """
         Writes actual (last treated interpolated data) to Geometrics stn file.
-        The file name is "data-type"followed by date and hour of file production
+        The file name is "data-type"followed by date and hour of file
+        production
 
         Returns
         -------
         None.
 
         """
-        fname = (
-            f"{self.dat[self.actual_plotted_file].data['type']}_"
-            + f"{self.getDateString()}.stn"
-        )
-        try:
-            isinstance(self.sensor1_inter, np.ndarray)
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                self.dat[self.actual_plotted_file].write_geometrics(
-                    fname,
-                    self.sensor1_inter,
-                    self.x_inter,
-                    self.y_inter,
-                    data2=self.sensor2_inter,
-                )
-            else:
-                self.dat[self.actual_plotted_file].write_geometrics(
-                    fname, self.sensor1_inter, self.x_inter, self.y_inter
-                )
-        except AttributeError:
-            self.dat[self.actual_plotted_file].write_geometrics(
-                fname, self.dat[self.actual_plotted_file].data, [None], [None]
-            )
+        fname = u.file_name(self.data.data["type"], ".stn")
+        self.data.write_geometrics(fname)
 
     def writeDat(self):
         """
         Writes actual (last treated not necessarily interpolated data) to
         Geometrics Surfer (.dat) format file.
-        The file name is "data-type"followed by date and hour of file production
+        The file name is "data-type"followed by date and hour of file
+        production
 
         Returns
         -------
         None.
 
         """
-        fname = (
-            f"{self.dat[self.actual_plotted_file].data['type']}_"
-            + f"{self.getDateString()}.dat"
-        )
+        fname = u.file_name(self.data.data["type"], ".dat")
         try:
             isinstance(self.sensor1_inter, np.ndarray)
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                self.dat[self.actual_plotted_file].write_dat(
-                    fname,
-                    self.sensor1_inter,
-                    self.x_inter,
-                    self.y_inter,
-                    data2=self.sensor2_inter,
-                    z=self.z_inter,
-                )
+            if self.data.data["grad_data"]:
+                self.data.write_dat(fname)
             else:
-                self.dat[self.actual_plotted_file].write_dat(
-                    fname,
-                    self.sensor1_inter,
-                    self.x_inter,
-                    self.y_inter,
-                    z=self.z_inter,
-                )
+                self.daa.write_dat(fname)
         except AttributeError:
-            self.dat[self.actual_plotted_file].write_dat(
-                fname, self.dat[self.actual_plotted_file].data, [None], [None]
-            )
+            self.data.write_dat(fname)
+
+    def writeGXF(self):
+        file = u.file_name(self.data.data["type"], ".gxf")
+        x0 = self.x_inter.min()
+        y0 = self.y_inter.min()
+        dx = self.x_inter[1] - self.x_inter[0]
+        dy = self.y_inter[1] - self.y_inter[0]
+        io.store_gxf(file, self.sensor1_inter, x0, y0, dx, dy)
 
     def saveBaseData(self):
         """
@@ -598,14 +1053,15 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        fname = f"base_{self.getDateString()}.stn"
+        fname = u.file_name("base", ".stn")
         self.base.write_base(fname)
 
     def original(self):
         """
-        Recovers original (not interpolated) data to restart data treatment
-        procedure.
-        If not base station data had been read, but they were produced through
+        If data were interpolated, go back to non-interpolated data, all
+        earlier treatments are retained. If not, all treatments on data are
+        undone.
+        If no base station data had been read, but they were produced through
         spline fit of median values, those data are deleted.
 
         Returns
@@ -613,24 +1069,23 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        self.dat[self.actual_plotted_file] = deepcopy(
-            self.dat_ori[self.actual_plotted_file]
-        )
-        self.treatments["odd lines"] = False
-        self.treatments["even lines"] = False
-        if len(self.base_files) == 0:
-            try:
-                del self.w.base
-                del self.w.time_base
-            except AttributeError:
-                pass
-        try:
-            del self.sensor1_inter
-            del self.sensor2_inter
-            del self.grad_inter
-        except AttributeError:
-            pass
-        self.w.saveSTN.setEnabled(False)
+        if not self.data.inter_flag:
+            self.data = deepcopy(self.dat_ori[self.actual_plotted_file])
+            self.treatments["odd lines"] = False
+            self.treatments["even lines"] = False
+            if len(self.base_files) == 0:
+                try:
+                    del self.w.base
+                    del self.w.time_base
+                except AttributeError:
+                    pass
+            self.treatments["diurnal"] = False
+            self.treatments["clip"] = False
+            self.treatments["justify_median"] = False
+            self.treatments["justify_Gauss"] = False
+            self.treatments["odd lines"] = False
+            self.treatments["even lines"] = False
+        self.w.originalData.setText("Restart with original data")
         self.w.fill.setEnabled(False)
         self.w.poleReduction.setEnabled(False)
         self.w.tiltAngle.setEnabled(False)
@@ -639,21 +1094,22 @@ class Main(QtWidgets.QWidget):
         self.w.prolongation.setEnabled(False)
         self.w.analytic.setEnabled(False)
         self.w.gaussJustify.setEnabled(False)
-        self.treatments["diurnal"] = False
-        self.treatments["clip"] = False
-        self.treatments["justify_median"] = False
-        self.treatments["justify_Gauss"] = False
+        self.w.saveGXF.setEnabled(False)
         self.treatments["interpol"] = False
         self.treatments["nan_fill"] = False
         self.treatments["pole"] = False
-        self.treatments["odd lines"] = False
-        self.treatments["even lines"] = False
         self.treatments["up"] = False
+        self.data.treatments = deepcopy(self.treatments)
         self.inclination = self.inclination_ori
         self.declination = self.declination_ori
+        self.earth.inc = self.inclination
+        self.earth.dec = self.declination
+        self.earth.earth_components()
         self.height = self.h_sensor + self.d_sensor
-        self.inter_flag = False
-        self.plotOriginal()
+        self.data.set_values(
+            earth=self.earth, treatments=self.treatments, inter_flag=False
+        )
+        self.plotActual()
 
     def plotOriginal(self):
         """
@@ -667,7 +1123,7 @@ class Main(QtWidgets.QWidget):
         data = self.dat_ori[self.actual_plotted_file].data
         self.fig, self.ax = self.w.plot_triang(
             data,
-            title=f"Original measured {data['type']} data",
+            title=f"{self.data.data['title']}, ",
             percent=self.percent,
             mincol1=self.mincol1,
             maxcol1=self.maxcol1,
@@ -679,7 +1135,7 @@ class Main(QtWidgets.QWidget):
             c=self.color,
         )
 
-    def plotActual(self, data=None):
+    def plotActual(self):
         """
         Plot actual data set modified and interpolated or not
 
@@ -688,17 +1144,22 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        title = f"{self.dat[self.actual_plotted_file].data['type']} data;\nTreatments:"
-        if self.inter_flag:
-            for t in self.treatments.items():
+        title = f"{self.data.data['title']};\nTreatments:"
+        ntreat = 0
+        if self.data.inter_flag:
+            for t in self.data.treatments.items():
                 if t[1]:
+                    if ntreat == 2:
+                        title += "\n"
                     title += " " + t[0] + ","
+                    ntreat += 1
             if title[-1] == ":":
                 title += " None"
             if title[-1] == ",":
                 title = title[:-1]
 
             self.fig, self.ax = self.w.plot_image(
+                self.data,
                 title=title,
                 percent=self.percent,
                 mincol1=self.mincol1,
@@ -709,12 +1170,10 @@ class Main(QtWidgets.QWidget):
                 maxcolg=self.maxcolg,
                 grad_flag=self.gradient_flag,
                 c=self.color,
-                dec=data["line_declination"],
+                dec=self.data.line_declination,
             )
         else:
-            if not data:
-                data = self.dat[self.actual_plotted_file].data
-            for t in self.treatments.items():
+            for t in self.data.treatments.items():
                 if t[0] in ("interpol", "nan_fill", "pole", "up"):
                     continue
                 if t[1]:
@@ -724,7 +1183,7 @@ class Main(QtWidgets.QWidget):
             if title[-1] == ",":
                 title = title[:-1]
             self.fig, self.ax = self.w.plot_triang(
-                data,
+                self.data,
                 title=title,
                 percent=self.percent,
                 mincol1=self.mincol1,
@@ -751,7 +1210,7 @@ class Main(QtWidgets.QWidget):
             self.w.plotGradient.setChecked(True)
         else:
             self.w.plotGradient.setChecked(False)
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
     def plot_geography(self):
         """
@@ -763,7 +1222,10 @@ class Main(QtWidgets.QWidget):
 
         """
         self.w.toggle_geography_flag()
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        for d in self.dat:
+            d.set_values(geography_flag=self.w.geography_flag)
+        self.data.set_values(geography_flag=self.w.geography_flag)
+        self.plotActual()
 
     def plot_lineaments(self):
         """
@@ -775,7 +1237,10 @@ class Main(QtWidgets.QWidget):
 
         """
         self.w.plotLin_flag = not self.w.plotLin_flag
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        for d in self.dat:
+            d.set_values(plotLin_flag=self.w.plotLin_flag)
+        self.data.set_values(plotLin_flag=self.w.plotLin_flag)
+        self.plotActual()
 
     def plot_grid(self):
         """
@@ -788,313 +1253,65 @@ class Main(QtWidgets.QWidget):
         """
         self.w.grid_flag = not self.w.grid_flag
         self.grid_flag = not self.grid_flag
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        for d in self.dat:
+            d.set_values(grid_flag=self.w.grid_flag)
+        self.set_values(grid_flag=self.w.grid_flag)
+        self.plotActual()
 
-    def plot_Line(self):
+    def plot_line(self):
+        self.plotLine(plot_flag=True)
+
+    def plotLine(self, plot_flag=True):
         """
         Plot one line out of the data set.
         The user is first asked to choose one line by mouse click. This line
         is shown in a floating window.
-        Erroneous data may be erased by clicking the mouse wheel at the beginning
-        and at the end of the zone to be erased. The program recognizes
-        automatically whether first or second sensor has been clicked.
-        Left mouse click changes line to the left/below, right mouse click goes
-        to the line to the right/above.
+        Erroneous data may be erased by clicking the mouse wheel at the
+        beginning and at the end of the zone to be erased. The program
+        recognizes automatically whether first or second sensor has been
+        clicked. Left mouse click changes line to the left/below, right mouse
+        click goes to the line to the right/above.
         A click outside the two coordinate systems stops the module and deletes
         the flowting window.
 
+        Parameters
+        ----------
+        plot_flag : bool, optional. Default: True
+            If true, data along line are plotted and returned, if False, data
+            are returned but nor plotted.
+
         Returns
         -------
-        None.
+        pos : 1D numpy float array
+            contains the coordinates of tha data pointsalong the chosen line
+        pos_line : float
+            position of the chosen line
+        s1 : 1D numpy float array
+            Measured data along the line of sensor 1
+        s2 : 1D numpy float array
+            Measured data along the line of sensor 2. If only one sensor, s2 is
+            np.array([None])
+        direction : str
+            May be "N" or "E", depending on whether the left or right mouse
+            button was pressed
 
         """
         direction = ""
-        self.setHelp("Click on line to be plotted", self.w.mplvl)
-        # Wait for mouse click to choose line to be plotted first
-        self.get_mouse_click(self.fig)
-        xm = self.x_mouse
-        ym = self.y_mouse
-        ms = self.mouse
-        read_flag = True
-        line_positions = np.array([])
-        # If interpolated data exist, use their coordinates. If not, the coordinates
-        #    are defined as all unique values of x and y
-        try:
-            _ = self.x_inter
-            inter = True
-        except AttributeError:
-            inter = False
-        # Create figure for line plot in floating window
-        self.fig_line = newWindow("Single line", 800, 500)
-        while True:
-            # If read_flag is True, define new line set to be plotted
-            if read_flag:
-                # If data set exists that has been interpolated onto a regular grid, use its
-                #    data, if not original ones
-                if inter:
-                    # If left mouse click, plot line in Y direction
-                    if ms == 1:
-                        lin = np.argmin(np.abs(self.x_inter - xm))
-                        s1 = self.sensor1_inter[:, lin]
-                        pos = self.y_inter
-                        line_positions = self.x_inter
-                        index = np.argsort(pos)
-                        s1 = s1[index]
-                        if self.w.grad_data:
-                            s2 = self.sensor2_inter[:, lin]
-                            s2 = s2[index]
-                        pos = pos[index]
-                        pos_line = self.x_inter[lin]
-                        direction = "N"
-                    # IIf right mous click or wheel, plot line in X direction
-                    else:
-                        lin = np.argmin(np.abs(self.y_inter - ym))
-                        s1 = self.sensor1_inter[lin, :]
-                        pos = self.x_inter
-                        line_positions = self.y_inter
-                        index = np.argsort(pos)
-                        s1 = s1[index]
-                        if self.w.grad_data:
-                            s2 = self.sensor2_inter[lin, :]
-                            s2 = s2[index]
-                        pos = pos[index]
-                        pos_line = self.y_inter[lin]
-                        direction = "E"
-                # Do the same if original data are ro be used
-                else:
-                    data = self.dat[self.actual_plotted_file].data
-                    direction = data[0]["direction"]
-                    keys = list(data.keys())[: -self.string_keys]
-                    pos_l = []
-                    for k in keys:
-                        if data[k]["direction"] in ("N", "S"):
-                            pos_l.append(np.median(data[k]["x"]))
-                        else:
-                            pos_l.append(np.median(data[k]["y"]))
-                    line_positions = np.unique(np.array(pos_l))
-                    pos_l = np.array(pos_l)
-                    if data[keys[0]]["direction"] in ("N", "S"):
-                        lin = np.argmin(abs(line_positions - xm))
-                    else:
-                        lin = np.argmin(abs(line_positions - ym))
-                    pos_line = line_positions[lin]
-                    line_keys = []
-                    pos = []
-                    s1 = []
-                    if self.dat[self.actual_plotted_file].data["grad_data"]:
-                        s2 = []
-                    for k in keys:
-                        if data[k]["direction"] in ("N", "S"):
-                            if np.isclose(np.median(data[k]["x"]), pos_line):
-                                pos += list(data[k]["y"])
-                                s1 += list(data[k]["s1"])
-                                if data["grad_data"]:
-                                    s2 += list(data[k]["s2"])
-                                line_keys.append(k)
-                        else:
-                            if np.isclose(np.median(data[k]["y"]), pos_line):
-                                pos += list(data[k]["x"])
-                                s1 += list(data[k]["s1"])
-                                if data["grad_data"]:
-                                    s2 += list(data[k]["s2"])
-                                line_keys.append(k)
-                    index = np.argsort(pos)
-                    s1 = np.array(s1)
-                    s1 = s1[index]
-                    if data["grad_data"]:
-                        s2 = np.array(s2)
-                        s2 = s2[index]
-                    pos = np.array(pos)[index]
-            read_flag = True
-            lmax = len(line_positions) - 1
-            self.function = "line"
-            self.fig_line = newWindow("Single line", 800, 500)
-            # If 2 sensors have been read in, create two subplots, if not, only one.
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                self.ax_line = self.fig_line.fig.subplots(2, 1)
-            else:
-                ax = self.fig_line.fig.subplots(1, 1)
-                # For simpler programming in the following part, copy single axis into a list
-                self.ax_line = [ax]
-            # Plot line values into first axis
-            self.ax_line[0].plot(pos, s1)
-            self.ax_line[0].set_title(f"Line at {pos_line:0.2f}")
-            if self.data_types[self.actual_plotted_file] == "magnetic":
-                if self.dat[self.actual_plotted_file].data["grad_data"]:
-                    self.ax_line[0].set_ylabel("Magnetic field [nT]\nsensor 1")
-                else:
-                    self.ax_line[0].set_ylabel("Magnetic field [nT]")
-            else:
-                if self.dat[self.actual_plotted_file].data["grad_data"]:
-                    self.ax_line[0].set_ylabel("Gravity field [mGal]\nsensor 1")
-                else:
-                    self.ax_line[0].set_ylabel("Gravity field [mGal]")
-            # if two sensors were used, plot values of second sensor into second axis
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                self.ax_line[1].plot(pos, s2)
-                self.ax_line[1].set_xlabel("Distance [m]")
-                if self.data_types[self.actual_plotted_file] == "magnetic":
-                    self.ax_line[1].set_ylabel("Magnetic field [nT]\nsensor 2")
-                else:
-                    self.ax_line[1].set_ylabel("Gravity field [mGal]\nsensor 2")
-            self.setHelp(
-                "Click left/right for next line to left/right, "
-                + "wheel inside axis to erase data (2 points, start&end), "
-                + "click outside axis to stop",
-                self.fig_line,
+        if self.inter_flag:
+            self.w.setHelp(
+                "Click left mouse button to choose line in Y "
+                + "direction or right button for X-direction"
             )
-            self.fig_line.show()
-            # Wait for mouse click in order to determine the next step:
-            #      Right click: plot next line to the East or North
-            #      Left click: plot next line to the West or South
-            #      Wheel allows eliminating manually erroneous data (click at left and
-            #            right of zone to be muted)
-            #      If the click was done outside of the axes, finish line plotting
-            self.get_mouse_click(self.fig_line.fig)
-            # Click was outside axes
-            if not self.event.inaxes:
-                self.fig_line.close()
-                self.function = "main"
-                self.plotActual(self.dat[self.actual_plotted_file].data)
-                return
-            # Left click inside an axis
-            if self.mouse == 1:
-                lin = max(0, lin - 1)
-                if direction in ("N", "S"):
-                    xm = line_positions[lin]
-                else:
-                    ym = line_positions[lin]
-            # Right click inside an axis
-            elif self.mouse == 3:
-                lin = min(lmax, lin + 1)
-                if direction in ("N", "S"):
-                    xm = line_positions[lin]
-                else:
-                    ym = line_positions[lin]
-            # Wheel was clicked. The click is interpreted as one of the limits of the
-            #       zone to be muted
-            else:
-                print("click1:", self.mouse, self.x_mouse)
-                x0 = self.x_mouse
-                # Wait for next mouse click.
-                self.get_mouse_click(self.fig_line.fig)
-                print("click2:", self.mouse, self.x_mouse)
-                # x0 = self.x_mouse
-                x1 = self.x_mouse
-                # Data between the two mouse clicks are muted.
-                # If the mouse click was detected at y > 200, mouse was in the upper subplot and
-                #    data of sensor 1 are muted. Else data of sensor 2 are muted.
-                index = np.where((pos > min(x0, x1)) & (pos < max(x0, x1)))
-                if self.ywin > 200 or not data["grad_data"]:
-                    s1[index] = np.nan
-                    if inter:
-                        if direction in ("N", "S"):
-                            self.sensor1_inter[:, lin] = s1
-                        else:
-                            self.sensor1_inter[lin, :] = s1
-                    else:
-                        i1 = 0
-                        for lin in line_keys:
-                            i2 = i1 + len(data[lin]["x"])
-                            data[lin]["s1"] = s1[i1:i2]
-                            i1 = i2
-                else:
-                    s2[index] = np.nan
-                    if inter:
-                        if direction in ("N", "S"):
-                            self.sensor2_inter[:, lin] = s2
-                        else:
-                            self.sensor2_inter[lin, :] = s2
-                    else:
-                        i1 = 0
-                        for lin in line_keys:
-                            i2 = i1 + len(data[lin]["x"])
-                            data[lin]["s2"] = s2[i1:i2]
-                            i1 = i2
-                read_flag = False
-
-    def get_mouse_click(self, fig):
-        """
-        wait for a mous click within figure "fig".
-
-        Parameters
-        ----------
-        fig : matplotlib figure
-            for main window, it must be self.w.mplvl
-            for floating window, it is the name that has been given to the
-            window at creation time
-
-        Returns
-        -------
-        None.
-        Mouse position, button pressed and the general event parameters are
-        accessible through self.x_mouse, self.y_mouse, self.mouse and self.event
-
-        """
-        self.wait = True
-        self.click = False
-        self.press = False
-
-        def onClick(event):
-            self.wait = False
-            self.click = True
-            self.event = event
-            self.x_mouse = event.xdata
-            self.y_mouse = event.ydata
-            self.mouse = event.button
-            self.xwin = event.x
-            self.ywin = event.y
-
-        # def onPress(event):
-        #     self.wait = False
-        #     self.press = True
-        #     self.key = event.key
-        fig.canvas.mpl_connect("button_press_event", onClick)
-        # fig.canvas.mpl_connect("key_press_event",onPress)
-        while self.wait:
-            QtCore.QCoreApplication.processEvents()
-
-    # def get_key(self,event):
-    #     self.wait = False
-    #     print(f"key: {event}")
-    #     if event.key == 16777234:
-    #         self.key = "left"
-    #     elif event.key == 16777236:
-    #         self.key = "right"
-    #     else:
-    #         self.key = event.key
-
-    def setHelp(self, text, fig):
-        """
-        Set help text at bottom of screen.
-
-        Parameters
-        ----------
-        text : str
-            Text to be printed (defined in __init__)
-            Text is written in QLabel widget. In order to keep the widget at the
-            bottom of the screen, the existing one is first erased and then reopened.
-            This call has to be done after any modification of the graphics window.
-
-        fig : Matplotlib Figure
-        Figure where to write the help text.
-
-        Returns
-        -------
-        None
-        """
-        try:
-            self.help.close()
-        except (AttributeError, RuntimeError):
-            pass
-        self.help = QtWidgets.QLabel(self)
-        self.help.setMaximumHeight(15)
-        if fig == self.w.mplvl:
-            fig.addWidget(self.help)
         else:
-            fig.layout.addWidget(self.help)
-        self.help.show()
-        self.help.setText(text)
+            self.w.setHelp("Click mouse button to choose a line")
+        # Wait for mouse click to choose line to be plotted first
+        while True:
+            event = self.w.get_mouse_click(self.fig)
+            if event.name == "button_press_event":
+                break
+        pos, pos_line, s1, s2, direction = self.data.plot_line(plot_flag, event)
+        self.plotActual()
+        return pos, pos_line, s1, s2, direction
 
     def changeColorScale(self):
         """
@@ -1107,7 +1324,7 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        cols = ["rainbow", "seismic", "viridis"]
+        cols = ["rainbow", "seismic", "viridis", "special mag"]
         if self.w.grad_data:
             results, okButton = dialog(
                 [
@@ -1170,7 +1387,7 @@ class Main(QtWidgets.QWidget):
                 self.color = cols[int(results[11])]
             else:
                 self.color = cols[int(results[5])]
-            self.plotActual(self.dat[self.actual_plotted_file].data)
+            self.plotActual()
         else:
             print(
                 f"\nClipping quantile left at {self.percent:0.3f}\n"
@@ -1191,100 +1408,19 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        self.function = "base"
-        while True:
-            try:
-                self.fig_base.clf()
-            except (NameError, AttributeError):
-                pass
-            base = self.base.base
-            self.fig_base = newWindow("Diurnal variations", 800, 500)
-            self.ax_base = self.fig_base.fig.add_subplot()
-            self.ax_base.plot(base.time_base / 86400.0, base.base)
-            self.ax_base.set_title("Diurnal variations")
-            self.ax_base.set_xlabel("Time of acquisition [day in year]")
-            if self.data_types[self.actual_plotted_file] == "magnetic":
-                self.ax_base.set_ylabel("Magnetic field [nT]")
-            else:
-                self.ax_base.set_ylabel("Gravity field [mGal]")
-            self.setHelp(
-                "Click left mouse button to close, wheel at two points "
-                + "to cut out data",
-                self.fig_base,
-            )
-            self.fig_base.show()
-            self.get_mouse_click(self.fig_base.fig)
-            if self.mouse == 2:
-                x0 = self.x_mouse * 86400.0
-                self.get_mouse_click(self.fig_base.fig)
-                x1 = self.x_mouse * 86400.0
-                index = np.where(
-                    (base.time_base > min(x0, x1)) & (base.time_base < max(x0, x1))
-                )
-                self.base.base.base[index] = np.nan
-            else:
-                self.function = "main"
-                self.fig_base.close()
-                self.plotActual(self.dat[self.actual_plotted_file].data)
-                return
+        try:
+            self.fig_base.clf()
+        except (NameError, AttributeError):
+            pass
+        base = self.base.base
+        base = FP.base_plot(base)
 
-    def plotMedian(self):
+    def plot_median(self):
         """
-        Plot medians of every measured line (from non-interpolated data). Odd
-        lines and even lines are plotted with different colours. Also sensor1
-        and sensor 2 data are plotted in to the same axis and distinuished by
-        different colors.
+        Wrapper to plot medians of all lines
 
         """
-        median1_even = []
-        median1_odd = []
-        if self.w.grad_data:
-            median2_even = []
-            median2_odd = []
-        nline_even = []
-        nline_odd = []
-        data = deepcopy(self.dat[self.actual_plotted_file].data)
-        for key, val in data.items():
-            if isinstance(key, (str)):
-                break
-            if key % 2 == 0:
-                median1_even.append(val["median1"])
-                if self.w.grad_data:
-                    median2_even.append(val["median2"])
-                nline_even.append(key + 1)
-            else:
-                median1_odd.append(val["median1"])
-                if self.w.grad_data:
-                    median2_odd.append(val["median2"])
-                nline_odd.append(key + 1)
-        self.fig_median = newWindow("Medians", 800, 500)
-        self.function = "median"
-        self.ax_median = self.fig_median.fig.add_subplot()
-        self.ax_median.plot(
-            nline_even, median1_even, color="b", marker="*", label="sensor1 even"
-        )
-        self.ax_median.plot(
-            nline_odd, median1_odd, color="c", marker="*", label="sensor1 odd"
-        )
-        if self.w.grad_data:
-            self.ax_median.plot(
-                nline_even, median2_even, color="r", marker="*", label="sensor2 even"
-            )
-            self.ax_median.plot(
-                nline_odd, median2_odd, color="orange", marker="*", label="sensor2 odd"
-            )
-        self.ax_median.set_title("Median values of all profiles")
-        self.ax_median.set_xlabel("Number of line")
-        if self.data_types[self.actual_plotted_file] == "magnetic":
-            self.ax_median.set_ylabel("Magnetic field [nT]")
-        else:
-            self.ax_median.set_ylabel("Gravity field [mGal]")
-        self.ax_median.legend(bbox_to_anchor=(1, 0), loc="lower right")
-        self.setHelp("Click any mouse button to close", self.fig_median)
-        self.fig_median.show()
-        self.get_mouse_click(self.fig_median.fig)
-        self.function = "main"
-        self.fig_median.close()
+        self.data.plot_median()
 
     # def zooming(self):
     #     pass
@@ -1298,7 +1434,7 @@ class Main(QtWidgets.QWidget):
     # def zoomInitial(self):
     #     pass
 
-    def savePlot(self):
+    def save_plot(self):
         """
         Function saves plot inside actual window into a png file
         The file name is prefix_date_time.png
@@ -1313,7 +1449,7 @@ class Main(QtWidgets.QWidget):
         c_time = now.strftime("%H-%M-%S")
         today = date.today()
         d1 = today.strftime("%Y-%m-%d")
-        fname = f"{self.dat[self.actual_plotted_file].data['type']}_{d1}_{c_time}.png"
+        fname = f"{self.data.data['type']}_" + f"{d1}_{c_time}.png"
         self.fig.savefig(fname)
 
     def diurnal(self):
@@ -1325,207 +1461,58 @@ class Main(QtWidgets.QWidget):
         """
         if len(self.base_files) > 0:
             deg = 3
-            self.day_joint_flag = False
-            self.diff_weight = 1.0
+            self.base_flag = True
         else:
-            if self.n_blocks > 1:
-                results, okButton = dialog(
-                    [
-                        "Degree of polynom",
-                        "Treat every block separately",
-                        "Weight for differences at edges",
-                    ],
-                    ["e", "c", "e"],
-                    [3, None, 5],
-                    "Diurnal variation by curve fit",
-                )
-                if not okButton:
-                    print("\nDiurnal correction not applied")
-                deg = int(results[0])
-                if int(results[1]) > 0:
-                    self.day_joint_flag = True
-                else:
-                    self.day_joint_flag = False
-                self.diff_weight = float(results[2])
-            else:
-                results, okButton = dialog(
-                    ["Degree of polynom"], ["e"], [3], "Diurnal variation by curve fit"
-                )
-                if not okButton:
-                    print("\nDiurnal correction not applied")
-                deg = int(results[0])
-                self.day_joint_flag = False
-                self.diff_weight = 1.0
-        self.treatments["diurnal"] = True
-        self.u.diurnal_correction(degree=deg, diff_weight=self.diff_weight)
+            results, okButton = dialog(
+                [
+                    "No base station data exist.\nFit polygone to medians or "
+                    + "cancel",
+                    "Degree of polynom",
+                ],
+                ["l", "e"],
+                [None, 5],
+                "Diurnal variation by curve fit",
+            )
+            if not okButton:
+                print("\nDiurnal correction not applied")
+            deg = int(results[1])
+            self.base = DataContainer(0)
+            self.base.base_ini()
+            self.base_flag = False
+        result = u.diurnal_correction(
+            self.data, self.base.base, base_flag=self.base_flag, degree=deg
+        )
+        if result:
+            self.treatments["diurnal"] = True
+            self.data.set_values(treatments=self.treatments)
         self.w.basePlot.setEnabled(True)
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
     def clean(self):
         """
-        Delete erroneous data
-        Opions are
-        * giving fixed upper and/or lower bounds (in or mGal)
-        * eliminating all data below and/or above a certain quantile
-        * choose limits by mouse click an a histogram (same value for both
-        sensors). First click: cut below, second: cut above. a click outside
-        an axis means not clipping in this direction.
-        Data outside the chosen zone are set to Nan.
+        Wrapper to delete erroneous data
 
         Returns
         -------
         None.
 
         """
-        # Get extreme valuess where to clip values
-        results, okButton = dialog(
-            [
-                "Lower fixed clip value",
-                "Upper fixed clip value",
-                "Lower percentile",
-                "upper percentile",
-                "histogram",
-            ],
-            ["e", "e", "e", "e", "c"],
-            [None, None, 0.01, None, None],
-            "Clipping parameters",
-        )
-        if okButton:
-            min_fix = None
-            max_fix = None
-            percent_down = None
-            percent_up = None
-            if results[0] != "None":
-                min_fix = float(results[0])
-            if results[1] != "None":
-                max_fix = float(results[1])
-            if results[2] != "None":
-                percent_down = float(results[2])
-            if results[3] != "None":
-                percent_up = float(results[3])
-            if min_fix:
-                percent_down = None
-            if max_fix:
-                percent_up = None
-            # If extreme values should be chosen manually in histogram, do this now
-            if results[4] == 0:
-                data = self.dat[self.actual_plotted_file].data
-                sensor1 = []
-                sensor2 = []
-                for key, val in data.items():
-                    if isinstance(key, (str)):
-                        break
-                    sensor1 += list(val["s1"])
-                    if data["grad_data"]:
-                        sensor2 += list(val["s2"])
-                sensor1 = np.array(sensor1)
-                if data["grad_data"]:
-                    sensor2 = np.array(sensor2)
-                # Plot 1 or 2 histograms depending on the number of sensors used
-                self.histo = newWindow("Clip_histogram", 800, 500)
-                if data["grad_data"]:
-                    self.ax_histo = self.histo.fig.subplots(1, 2)
-                else:
-                    ax = self.histo.fig.subplots(1, 1)
-                    self.ax_histo = [ax]
-                rmin1 = np.nanquantile(sensor1, 0.001)
-                rmax1 = np.nanmax(sensor1)
-                counts1, _, _ = self.ax_histo[0].hist(sensor1, 20, (rmin1, rmax1))
-                if data["grad_data"]:
-                    self.ax_histo[0].set_title("Sensor 1")
-                else:
-                    if data["type"] == "magnetic":
-                        self.ax_histo[0].set_title("Magnetic field")
-                    else:
-                        self.ax_histo[0].set_title("Gravity field")
-                if data["grad_data"]:
-                    rmin2 = np.nanquantile(sensor2, 0.001)
-                    rmax2 = np.nanmax(sensor2)
-                    self.ax_histo[1].hist(self.w.sensor2, 20, (rmin2, rmax2))
-                    self.ax_histo[1].set_title("Sensor 2")
-                self.setHelp(
-                    "click within one of the histograms for minimum value, "
-                    + "then for maximum value. Click outside = None",
-                    self.histo,
-                )
-                self.histo.show()
-                # Wait for mous click to define lower data limit
-                #                self.get_mouse_click(self.histo.fig, self.ax_histo)
-                self.get_mouse_click(self.histo.fig)
-                if self.x_mouse:
-                    if data["grad_data"]:
-                        if self.x_mouse > min(sensor1.min(), sensor2.min()):
-                            self.ax_histo[0].plot(
-                                [self.x_mouse, self.x_mouse], [0, max(counts1)], "r"
-                            )
-                            min_fix = self.x_mouse
-                            percent_down = None
-                    else:
-                        if self.x_mouse > sensor1.min():
-                            self.ax_histo[0].plot(
-                                [self.x_mouse, self.x_mouse], [0, max(counts1)], "r"
-                            )
-                            min_fix = self.x_mouse
-                            percent_down = None
-                # Wait for mous click to define upper data limit
-                #                self.get_mouse_click(self.histo.fig, self.ax_histo)
-                self.get_mouse_click(self.histo.fig)
-                if self.x_mouse:
-                    if data["grad_data"]:
-                        if self.x_mouse < max(sensor1.max(), sensor2.max()):
-                            self.ax_histo[0].plot(
-                                [self.x_mouse, self.x_mouse], [0, max(counts1)], "r"
-                            )
-                            max_fix = self.x_mouse
-                            percent_up = None
-                    else:
-                        if self.x_mouse < sensor1.max():
-                            self.ax_histo[0].plot(
-                                [self.x_mouse, self.x_mouse], [0, max(counts1)], "r"
-                            )
-                            max_fix = self.x_mouse
-                            percent_up = None
-                self.histo.close()
-        else:
-            print("\nclipping cancelled")
-            return
+        self.data.clean()
         self.treatments["clip"] = True
-        # Delet data outside limits
-        self.u.clean_data(
-            min_fix=min_fix,
-            max_fix=max_fix,
-            percent_down=percent_down,
-            percent_up=percent_up,
-        )
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
     def justify_median(self):
         """
-        Adjust medians of every second line to the average of the medians of
-        the neighboring lines in order to attenuate the directional effects
-        of measurements.
-        The lines to be modified may be the even ones or the odd ones (does not
-        always give the same result). Medians of lines at the edges are set to
-        the same value as the neighboring line.
+        Wrapper to reduce directional effect by median adjustment
 
         """
-        results, okButton = dialog(
-            ["Modify median of", ["Odd lines", "Even lines"]],
-            ["l", "r"],
-            [None, 0],
-            "Justification type",
-        )
-        if okButton:
-            justify = int(results[1])
-        else:
-            print("\nJustification cancelled")
-            return
+        self.data.justify_median()
         self.treatments["justify_median"] = True
-        self.u.justify_lines_median(justify)
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
     def justify_gauss(self):
         """
+        Wrapper to reduce directional effect by Gaussian adjustment
         see Masoudi et al., J. Geophys. Eng., 2023
 
         Returns
@@ -1533,118 +1520,25 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        results, okButton = dialog(
-            [
-                "Modify median of",
-                ["Odd lines", "Even lines"],
-                ["Global adjustment", "Line by line"],
-            ],
-            ["l", "r", "r"],
-            [None, 0, 1],
-            "Justification type",
-        )
-        if okButton:
-            justify = int(results[1])
-            local = int(results[2])
-        else:
-            print("\nJustification cancelled")
-            return
+        self.data.justify_gauss()
         self.treatments["justify_Gauss"] = True
-        self.u.justify_lines_gaussian(justify, local)
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
     def interpol(self):
         """
         Interpolate data within the measurement lines onto a regular grid.
-        No data are extrapolated, i.e. if a line starts later or finishes earlier
-        than a regular grid, missing grid points are set to nan
+        No data are extrapolated, i.e. if a line starts later or finishes
+        earlier than a regular grid, missing grid points are set to nan
 
         Returns
         -------
         None.
 
         """
-        data = self.dat[self.actual_plotted_file].data
-        if data[0]["direction"] in ("N", "S"):
-            ddy = np.round(
-                abs(data[0]["y"][-1] - data[0]["y"][0]) / len(data[0]["y"]), 2
-            )
-            ddx = np.round(abs(data[0]["x"][0] - data[1]["x"][0]), 2)
-        else:
-            ddx = np.round(
-                abs(data[0]["x"][-1] - data[0]["x"][0]) / len(data[0]["x"]), 2
-            )
-            ddy = np.round(abs(data[0]["y"][0] - data[1]["y"][0]), 2)
-        while True:
-            results, okButton = dialog(
-                ["dx [m]", "dy [m]"], ["e", "e"], [ddx, ddy], "Interpolation parameters"
-            )
-            if okButton:
-                self.dx = float(results[0])
-                self.dy = float(results[1])
-            else:
-                print("\nInterpolation cancelled")
-                return
-            xmin = 1.0e10
-            xmax = -1.0e10
-            ymin = 1.0e10
-            ymax = -1.0e10
-            for key, val in data.items():
-                if isinstance(key, (str)):
-                    break
-                xmin = min(xmin, val["x"].min())
-                xmax = max(xmax, val["x"].max())
-                ymin = min(ymin, val["y"].min())
-                ymax = max(ymax, val["y"].max())
-            n_inter_x = (xmax - xmin) / self.dx
-            n_inter_y = (ymax - ymin) / self.dy
-            # if data[0]["direction"] in ("N", "S"):
-            #     n_inter = int(np.round((self.w.x.max()-self.w.x.min()),1)/self.dx)
-            # else:
-            #     n_inter = int(np.round((self.w.y.max()-self.w.y.min()),1)/self.dx)
-            if n_inter_x > 1000 or n_inter_y > 1000:
-                answer = QtWidgets.QMessageBox.warning(
-                    None,
-                    "Warning",
-                    f"dx/dy={self.dx}/{self.dy} produces huge grid "
-                    + f"({n_inter_x}x{n_inter_y} points)\n "
-                    + "Ignore and continue or\n  close and try again\n",
-                    QtWidgets.QMessageBox.Ignore | QtWidgets.QMessageBox.Close,
-                    QtWidgets.QMessageBox.Close,
-                )
-                if answer == QtWidgets.QMessageBox.Close:
-                    continue
-                break
-            break
-        self.inter_flag = True
-        if data["grad_data"]:
-            (
-                self.sensor1_inter,
-                self.sensor2_inter,
-                self.grad_inter,
-                self.x_inter,
-                self.y_inter,
-                self.z_inter,
-            ) = self.u.interpol_2D(dx=self.dx, dy=self.dy)
-        else:
-            self.sensor1_inter, _, _, self.x_inter, self.y_inter, self.z_inter = (
-                self.u.interpol_2D(dx=self.dx, dy=self.dy)
-            )
-        self.mask1 = np.isnan(self.sensor1_inter)
-        self.dx = self.x_inter[1] - self.x_inter[0]
-        self.dy = self.y_inter[1] - self.y_inter[0]
-        self.sensor1_fill = self.u.extrapolate(
-            self.sensor1_inter, self.x_inter, self.y_inter
-        )
-        if data["grad_data"]:
-            self.mask2 = np.isnan(self.sensor2_inter)
-            self.sensor2_fill = self.u.extrapolate(
-                self.sensor2_inter, self.x_inter, self.y_inter
-            )
-            self.grad_fill = (self.sensor1_fill - self.sensor2_fill) / data["d_sensor"]
-        self.w.saveSTN.setEnabled(True)
-        self.w.fill.setEnabled(True)
-        if data["type"] == "magnetic":
+        self.data.interpol()
+        self.dat[self.actual_plotted_file] = deepcopy(self.data)
+        self.treatments["interpol"] = True
+        if "m" in self.data.data_type:
             self.w.poleReduction.setEnabled(True)
         self.w.tiltAngle.setEnabled(True)
         self.w.lineFFT.setEnabled(True)
@@ -1652,10 +1546,10 @@ class Main(QtWidgets.QWidget):
         self.w.prolongation.setEnabled(True)
         self.w.analytic.setEnabled(True)
         self.w.gaussJustify.setEnabled(True)
-        self.treatments["interpol"] = True
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.w.originalData.setText("Restart with ungridded data")
+        self.plotActual()
 
-    def nanFill(self):
+    def nan_fill(self):
         """
         Fill nan values by interpolation of data in the direction perpendicular
         to the measurement direction (it is supposed that if a line is not
@@ -1668,674 +1562,27 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        self.treatments["nan_fill"] = True
-        self.sensor1_inter = self.u.extrapolate(
-            self.sensor1_inter, self.x_inter, self.y_inter
-        )
-        if self.dat[self.actual_plotted_file].data["grad_data"]:
-            self.sensor2_inter = self.u.extrapolate(
-                self.sensor2_inter, self.x_inter, self.y_inter
-            )
-            self.grad_inter = (self.sensor1_inter - self.sensor2_inter) / self.dat[
-                self.actual_plotted_file
-            ].data["d_sensor"]
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.data.nan_fill()
+        self.plotActual()
 
-    def reducePole(self):
+    def reduce_pole(self):
         """
-        Pole reduction is done, only for the external field, eventual remanent
-        magnetization is not taken into account.
+        Wrapper for pole reduction is done.
 
         Returns
         -------
         None.
 
         """
-        self.treatments["pole"] = True
-
-        self.sensor1_inter = self.u.pole_Reduction(
-            self.sensor1_fill, self.dx, self.dy, self.inclination, self.declination
-        )
-        self.sensor1_fill = np.copy(self.sensor1_inter)
-        self.sensor1_inter[self.mask1] = np.nan
-        if self.dat[self.actual_plotted_file].data["grad_data"]:
-            d_sensor = self.dat[self.actual_plotted_file].data["d_sensor"]
-            self.sensor2_inter = self.u.pole_Reduction(
-                self.sensor2_fill, self.dx, self.dy, self.inclination, self.declination
-            )
-            self.sensor2_fill = np.copy(self.sensor2_inter)
-            self.sensor2_inter[self.mask2] = np.nan
-            self.grad_inter = (self.sensor1_inter - self.sensor2_inter) / d_sensor
-            self.grad_fill = (self.sensor1_fill - self.sensor2_fill) / d_sensor
-        self.inclination = 90.0
-        self.declination = 0.0
-        self.plotActual(self.dat[self.actual_plotted_file].data)
-
-    def log_spect(self, data, d, n_coef):
-        """
-        Calculate logarithmic power spectrum of a series of data
-
-        Parameters
-        ----------
-        data : numpy 1D array, float
-            Data to be analyzed.
-        d : float
-            Distance between data points (sampling distance).
-        n_coef : int
-            Number of coefficients of the spectrum to be returned.
-
-        Returns
-        -------
-        numpy 1D array
-            logarithm of normalized power spectrum.
-        list
-            Wavenumbers of power spectrum.
-
-        """
-        index = np.isfinite(data)
-        data = data[index]
-        if len(data) < 3:
-            return [None], [None]
-        # Calculate Fourier transform
-        FT = np.fft.fft(data)
-        FT *= 2 / len(data)
-        FT[0] /= 2.0
-        Fabs = abs(FT)
-        k = np.fft.fftfreq(len(data), d=d) * 2.0 * np.pi
-        # Plot data only up to coefficient (n_coef)
-        eps = 1e-10
-        # Return log of power spectrum (add epsilon to avoid log(0)), wave numbers
-        return np.log(Fabs[1:n_coef] ** 2 + eps), k[1:n_coef]
-
-    def fit2lines(self, x, y, n0, n1, n2, n0_flag):
-        """
-        Fit two regression lines to a data set.
-        Find the point where a break in slope gives the best fit between the
-        n1th point and the n2th point
-
-        Parameters
-        ----------
-        x : numpy 1D array, float
-            x-coordinates of the data series.
-        y : numpy 1D array, float
-            y-coordinates of the data series.
-        n0 : int
-            first point of the series to be considered.
-        n1 : int
-            First point in series considered for possible slope break.
-        n2 : int
-            Last point in series considered for possible slope break.
-        n0_flag : bool
-            if True : first line must pass through point n0
-
-        Returns
-        -------
-        regression coefficients for first slope
-        regression coefficients for second slope
-        int: position of slope beak
-        float: misfit
-
-        """
-        r1_best = None
-        r2_best = None
-        qual = -1.0e20
-        n3 = len(x)
-        isplit = n1
-        #        weight = np.exp(y)
-        #        weight = np.arange(len(y))**2
-        # Fit two regression lines to data. For this, search breaking point between
-        #     third and 11th data point for which the fit is best
-        for i in range(n1, n2):
-            k1 = x[n0 : i + 1].reshape(-1, 1)
-            k2 = x[i:].reshape(-1, 1)
-            if n0_flag:
-                reg1 = LR(fit_intercept=False).fit(k1 - k1[0], y[n0 : i + 1] - y[n0])
-                reg1.intercept_ = y[n0] - k1[0] * reg1.coef_
-            else:
-                reg1 = LR(fit_intercept=True).fit(k1, x[n0 : i + 1])
-            reg2 = LR(fit_intercept=True).fit(k2, y[i:])
-            fit = reg1.score(k1, y[n0 : i + 1]) / (i - n0) + reg2.score(k2, y[i:]) / (
-                n3 - i
-            )
-            # yp1 = reg1.predict(k1)
-            # nn = len(yp1)
-            # fit1 = np.sum((yp1-y[:nn])**2)
-            # yp2 = reg2.predict(k2[1:])
-            # fit2 = np.sum((yp2-y[nn:])**2)
-            # fit = fit1+fit2
-            # yp = np.concatenate((yp1,yp2))
-            # fit = np.sum((yp - y)**2*weight)
-            # If fit is better than earlier ones, calculate depths from both slopes
-            if np.isfinite(fit) and fit > qual:
-                qual = fit
-                r1_best = reg1
-                r2_best = reg2
-                isplit = i
-        return r1_best, r2_best, isplit, qual
-
-    #     def fit3lines(self,x,y,n0,n1,n2):
-    #         from sklearn.linear_model import LinearRegression as LR
-    #         qual = np.inf
-    #         n3 = len(x)
-    # # Fit two regression lines to data. For this, search breaking point between
-    # #     third and 11th data point for which the fit is best
-    #         for i in range(n1,n2):
-    #             for j in
-    #             k1 = y[n0:i+1].reshape(-1,1)
-    #             k2 = y[i:].reshape(-1,1)
-    #             reg1 = LR().fit(k1,x[n0:i+1])
-    #             reg2 = LR().fit(k2,x[i:])
-    #             fit = reg1.score(k1,x[n0:i+1])*(i-n0)+reg2.score(k2,x[i:])*(n3-i)
-    # # If fit is better than earlier ones, calculate depths from both slopes
-    #             if fit < qual:
-    #                 qual = fit
-    #                 r1 = reg1
-    #                 r2 = reg2
-    #                 isplit = i
-    #         return r1,r2,isplit
-
-    def min_max(self, data, half_width=3):
-        """
-        Find all relative minima and maxima in a data vector.
-        
-        A maximum is found if a value at position i of the vector is larger
-        than or equal to all other values in a range [i-half_width:i+half_with]
-        and at the same time strictly larger than all values of one side.
-        Sometimes, e.g. if seismograms are saturated, a slope exists on one side,
-        but the values are constant on the other side. The one-sided test is to
-        avoid that a flat curve with 2*half_width constant values is also
-        considered as local maximum. Equivalent scheme for definition of a minimum.
-        In addition, the function reduces possible local maxima and minima such that
-        a maximum is always followed by a minimum and vice versa. If several local
-        maxima follow each other (i.e. no wide enough local minimum exists between
-        them), the program searches the strongest one of the subsequent maxima or, if
-        several equal maximum values exist, it takes as position of the maximum the
-        center point between those multiple maxima (again for saturated curves).
-
-        Parameters
-        ----------
-        data : 1D numpy float array
-            Data vrctor to be analysed
-        half_width : int, optional (default: 3)
-            Number of samples analyzed to all ides of every data sample.
-
-        Returns
-        -------
-        max_pos: 1D numpy int array
-            All position numbers where there is a relative maximum in vector "data".
-        max_val: 1D numpy float array
-            Values at these positions
-        min_pos: 1D numpy int array
-            All position numbers where there is a relative minimum in vector "data"
-        min_val: 1D numpy float array
-            Values at these positions
-        """
-        N = len(data)
-        NN = np.arange(N, dtype="int")
-        # extreme_pos (extreme_neg) will contain the sum of all values <= (>=) the
-        #   central value
-        # half will contain the maximum of the number of
-        #   values < (>) the central value on the left and the right side
-        # A maximum (minimum) is found if extreme_xxx[i]==(2*half_width+1) and if
-        #   half_extreme_xxx[i]==half_width.
-        extreme_pos = np.zeros(N, dtype=bool)
-        extreme_neg = np.zeros(N, dtype=bool)
-        # Start loop over data points
-        for k in range(N):
-            # Sum of neigbouring points for which value[i] <= (>=) value[test_point]
-            dn0 = min(half_width, k)
-            dn1 = min(half_width, N - k - 1) + 1
-            width = dn0 + dn1
-            ext_pos = sum(data[k] - data[k - dn0 : k + dn1] >= 0) == width
-            # Sum of neighbouring values to the left (half1) and right (half2) < value [test_point]
-            half1 = sum(data[k] - data[k - dn0 : k] > 0)
-            half2 = sum(data[k] - data[k + 1 : k + dn1] > 0)
-            half = max(half1, half2) == half_width
-            extreme_pos[k] = ext_pos and half
-
-            # Sum of neighbouring values to the left (half1) or right (half2) > value [test_point]
-            ext_neg = sum(data[k] - data[k - dn0 : k + dn1] <= 0) == width
-            half1 = sum(data[k] - data[k - dn0 : k] < 0)
-            half2 = sum(data[k] - data[k + 1 : k + dn1] < 0)
-            half = max(half1, half2) == half_width
-            extreme_neg[k] = ext_neg and half
-        # Search all points that fulfill the criteria for local maximum and minimum
-        #        max_pos = NN[(extreme_pos==width) & (half_extreme_pos==half_width)]
-        max_pos = NN[extreme_pos]
-        max_val = data[max_pos]
-        #        min_pos = NN[(extreme_neg==width) & (half_extreme_neg==half_width)]
-        min_pos = NN[extreme_neg]
-        min_val = data[min_pos]
-        del extreme_pos, extreme_neg
-        # mx_sig is a vector with length equal to number of found maxima with +1
-        # mn_sig is a vector with length equal to number of found maxima with -1
-        #   These vectors will be used to know which position is a maximum, which one
-        #   a minimum, once all extrema are concatenated in a single vector in order to
-        #   intercalate maxima and minima and to find places where multiple maxima or
-        #   minima follow each other
-        mx_sig = np.ones(len(max_pos))
-        mn_sig = -np.ones(len(min_pos))
-        # Concatenate positions, values and signs of maxima and minima into a single vector
-        #   for each of them
-        signs = np.concatenate((mx_sig, mn_sig))
-        positions = np.concatenate((max_pos, min_pos))
-        values = np.concatenate((max_val, min_val))
-        # Order the concatenated vectors by positions
-        iord = np.argsort(positions)
-        pord = positions[iord]
-        vord = values[iord]
-        sord = signs[iord]
-        ls = len(sord)
-        # Prepare lists that will contain positions, values and signs of alternating
-        #   extreme values (avoiding having several maxima (minima) following each other
-        #   without a minumum (maximum) between them).
-        pos = []
-        val = []
-        sig = []
-        i = 1
-        # Start loop over concatenated extreme positions
-        while i < ls:
-            # If sign of position [i] is different from position [i-1] accept position [i-1]
-            #   into a new list
-            if sord[i] != sord[i - 1]:
-                pos.append(pord[i - 1])
-                val.append(vord[i - 1])
-                sig.append(sord[i - 1])
-            if i == ls - 1:
-                if sord[i] != sord[i - 1]:
-                    pos.append(pord[i])
-                    val.append(vord[i])
-                    sig.append(sord[i])
-                    i += 1
-                break
-            #            continue
-            # if sign of position i is the same as the one of position i-1 search for next
-            #   position where sign changes
-            i1 = i + 1
-            for i1 in range(i + 1, ls):
-                if sord[i] != sord[i1]:
-                    break
-            if i1 < i:
-                break
-            # Search maximum values of the positions having the same sign
-            #   the chosen position is the average position of all equal maximum (minimum)
-            #   values. If one of the relative maxima (minima) has the strongest value, its
-            #   position and value will be copied into the new list.
-            if sord[i] > 0:
-                mx = np.where(vord[i:i1] == max(vord[i:i1]))
-                mpos = int(np.mean(pord[i:i1][mx]))
-                pos.append(mpos)
-                val.append(max(vord[i:i1]))
-                sig.append(sord[i])
-            else:
-                mx = np.where(vord[i:i1] == min(vord[i:i1]))
-                mpos = int(np.mean(pord[i:i1][mx]))
-                pos.append(mpos)
-                val.append(min(vord[i:i1]))
-                sig.append(sord[i])
-            i = i1 + 1
-        del max_pos, max_val, min_pos, min_val, iord, pord, vord, sord
-        # Transform lists to numpy arrays
-        pos = np.array(pos)
-        val = np.array(val)
-        sig = np.array(sig)
-        # Separate again relative maxima from relative minima
-        max_val = val[sig > 0]
-        max_pos = pos[sig > 0]
-        min_val = val[sig < 0]
-        min_pos = pos[sig < 0]
-        del pos, val, sig, positions, signs, values
-        return max_pos, max_val, min_pos, min_val
-
-    def min_max2D(self, data, half_width=3):
-        """
-        Find all relative minima and maxima in a 2D data matrix.
-        
-        A maximum is found if a value at position i of the vector is larger
-        than or equal to all other values in a range [i-half_width:i+half_with]
-        in both directions independently and at the same time strictly larger
-        than all values of one side.
-        
-        The function searches first all relative extrema alng every column, then
-        along every row. The returned positions are the combination of points
-        found in both directions. In this way ridges parallel to the x axis
-        and parallel to the y axes are detected.
-
-        Parameters
-        ----------
-        data : 2D numpy float array
-            Data matrix to be analysed
-        half_width : int, optional (default: 3)
-            Number of samples analyzed to all ides of every data sample.
-
-        Returns
-        -------
-        maxima : List of two 1D numpy int arrays
-            All position numbers where there is a relative maximum in array "data".
-            maxima[0]: vector of row numbers, maxima[1]: vector of column numberss
-        minima: List of two 1D numpy int arrays
-            All position numbers where there is a relative minimum in array "data"
-            minima[0]: vector of row numbers, minima[1]: vector of column numbers
-        """
-        ny,nx = data.shape
-        extreme_pos = np.zeros((ny,nx), dtype=bool)
-        extreme_neg = np.zeros((ny,nx), dtype=bool)
-        # Loop over columns
-        for k in range(nx):
-            max_pos, _, min_pos, _ = self.min_max(data[:,k],half_width=half_width)
-            extreme_pos[max_pos,k] = True
-            extreme_neg[min_pos,k] = True
-        # Loop over columns
-        for k in range(ny):
-            max_pos, _, min_pos, _ = self.min_max(data[k,:],half_width=half_width)
-            extreme_pos[k,max_pos] = True
-            extreme_neg[k,min_pos] = True
-        return np.where(extreme_pos), np.where(extreme_neg)
-
-    def zero_xing2D(self, data):
-        """
-        Search zero crossings in a 2D data set
-        
-        The zero crossing is marked in the cell to the left or below the zero
-        crossing if the value itself is not zero.
-        
-        Parameters
-        ----------
-        data : 2D numpy float array
-            data to be analyzed
-
-        Returns
-        -------
-        zeroes : List of two 1D numpy int arrays
-            All position numbers where there is a zero crossing in array "data".
-            zeroes[0]: vector of row numbers, zeroes[1]: vector of column numbers
-        
-        """
-        ny,nx = data.shape
-        xing = np.zeros((ny,nx), dtype=bool)
-        for k in range(nx-1):
-            for i in range(ny-1):
-                if data[i,k] == 0.:
-                    xing[i,k] = True
-                    continue
-                if data[i,k]*data[i+1,k]<0. or data[i,k]*data[i,k+1]<0.:
-                    xing[i,k] = True
-        return np.where(xing)
-
-    def spector_line(self, data, d, n_coef, half_width):
-        """
-        Calculate depth of random sources with formula of (Spector and Grant,
-        Geophysics, 1970) for one line.
-        Depths are calculated by fitting two lines to logarithmic spectrum. The
-        break point between the two lines is searched between the 4th spectral
-        coefficient and the one at position n_Ny-4.
-
-        Parameters
-        ----------
-        data : numpy 1D array, float
-            Data to be analyzed
-        d : float
-            distance between data points [m].
-        n_coef : int
-            Number of coefficients to be used for line fitting.
-        half_width : int
-            Used for determination of local maxima: if the value of point # i
-            is larger than all values between i-helf_width a,d i+half_width, the
-            point i is considered a local maximum.
-
-        Returns
-        -------
-        float
-            Depth calculated with slope of small wave numbers.
-        float
-            Depth calculated with slope of large wave numbers.
-        int
-            Number of spectral coefficient where the slope break is located.
-        float
-            Intercept of first line (small wave numbers).
-        float
-            Intercept of second line (large wave numbers).
-        float
-            Misfit of data adjustment
-        numpy 1D array, float
-            Logarithmic power spectral values.
-        numpy 1D array, float
-            Wave numbers of power spectrum.
-
-        """
-        dd, kk = self.log_spect(data, d, n_coef)
-        if not dd[0]:
-            return None, None, -1, None, None, None, [None], [None]
-        if kk[-1] < 0:
-            index = kk > 0
-            dd = dd[index]
-            kk = kk[index]
-            dd = dd[: int(len(dd) / 10)]
-            kk = kk[: int(len(dd) / 10)]
-        # In order to avoid negative depths, the analysis is started at the coefficient
-        #    having the maximum amplitude (excluding the first coefficient which is the
-        #    average value)
-        max_pos, d, _, _ = self.min_max(dd, half_width=half_width)
-        if len(max_pos) < 8:
-            kkk = kk
-            d = dd
-        else:
-            kkk = kk[max_pos]
-        n0 = np.argmax(d)
-        n1 = n0 + 3
-        n2 = len(d) - 3
-        if n2 <= n1:
-            return None, None, -1, None, None, None, [None], [None]
-        # Fit two regression lines to data. For this, search breaking point between
-        #     third and 11th data point for which the fit is best
-        reg1, reg2, isp, fit = self.fit2lines(kkk, d, n0, n1, n2, True)
-        isplit = np.argmin(abs(kk - kkk[isp]))
-        depth1 = -reg1.coef_[0] / 2
-        depth2 = -reg2.coef_[0] / 2
-        return depth1, depth2, isplit, reg1.intercept_, reg2.intercept_, fit, dd,\
-               kk, d, kkk
-
-    # Store best fitting depths in list
+        self.data.reduce_pole()
+        self.plotActual()
 
     def spector(self):
         """
-        Calculate depth of random sources with formula of (Spector and Grant,
-        Geophysics, 1970) for all lines (N-S or E-W direction).
-        Depths are calculated by fitting two lines to logarithmic spectrum. The
-        break point between the two lines is searched between the 4th and the 10th
-        spectral coefficient.
-        Results of all lines are saved in file spector.dat.
+        Wrapper for calculation of 2D Spector&Grant depths for all lines
 
         """
-        # Check whether data are interpolated
-        if not self.inter_flag:
-            _ = QtWidgets.QMessageBox.warning(
-                None,
-                "Warning",
-                "Data are not yet interpolated.\nYou should do this "
-                + "before calling FFT.",
-                QtWidgets.QMessageBox.Close,
-                QtWidgets.QMessageBox.Close,
-            )
-            return
-        # Wait for mouse click to choose line for which the result will be shown on screen
-        self.function = "spector"
-        xx = self.x_inter
-        yy = self.y_inter
-        max_len_x = self.x_inter.max() - self.x_inter.min()
-        max_len_y = self.y_inter.max() - self.y_inter.min()
-        max_len = [max_len_y, max_len_x]
-        ndat = np.array([len(self.y_inter), len(self.x_inter)])
-        Ny = np.array(ndat / 2, dtype=int)
-        # Set parameters depending on measurement direction
-        d = self.dat[self.actual_plotted_file].data[0]["direction"]
-        if d in ("N", "S"):
-            direction = 0
-        else:
-            direction = 1
-        results, okButton = dialog(
-            [
-                "Direction of analysis",
-                ["N-S", "E-W"],
-                "Half width for maxima determination",
-                f"Window length (not yet used)\nmax in X: {max_len_x} in Y: {max_len_y}",
-            ],
-            ["l", "r", "e", "e"],
-            [None, direction + 1, 1, max_len[direction]],
-            "FFT analysis",
-        )
-        if okButton:
-            direction = int(results[1])
-            half_width = int(results[2])
-        else:
-            print("No FFT analysis done")
-            return
-        dx = xx[1] - xx[0]
-        dy = yy[1] - yy[0]
-        if direction == 0:
-            nlines = len(self.x_inter)
-            dsamp = dy
-        else:
-            nlines = len(self.y_inter)
-            dsamp = dx
-        n_Ny = Ny[direction]
-        # Prepare lists where to store the calculation results
-        depths1 = []
-        depths2 = []
-        intercepts1 = []
-        intercepts2 = []
-        isplits = []
-        lpos = []
-        fits = []
-        # Loop over all lines, extract data and define coordinates
-        for il in range(nlines):
-            if direction:
-                data = self.sensor1_inter[il, :]
-                pos_line = self.y_inter[il]
-            else:
-                data = self.sensor1_inter[:, il]
-                pos_line = self.x_inter[il]
-            depth1, depth2, isplit, intercept1, intercept2, fit, _, _, _, _ = (
-                self.spector_line(data, dsamp, n_Ny, half_width)
-            )
-            if not depth1:
-                continue
-            # Store best fitting depths in list
-            depths1.append(max(depth1, depth2))
-            depths2.append(min(depth1, depth2))
-            intercepts1.append(intercept1)
-            intercepts2.append(intercept2)
-            isplits.append(isplit)
-            lpos.append(pos_line)
-            fits.append(fit)
-        # Store all calculated depths into file "spector.dat
-        while True:
-            self.fig_spector = newWindow("Spector", 1900, 1100)
-            self.ax_spector = self.fig_spector.fig.add_subplot()
-            self.ax_spector.plot(lpos, depths1)
-            self.ax_spector.invert_yaxis()
-            self.ax_spector.set_title("Average depths from spectral analysis")
-            self.ax_spector.xaxis.set_minor_locator(AutoMinorLocator())
-            if direction:
-                self.ax_spector.set_xlabel("Northing of line [m]")
-            else:
-                self.ax_spector.set_xlabel("Easting of line [m]")
-            self.ax_spector.set_ylabel("Average depth [m]")
-            self.ax_spector.grid(visible=True, which="both")
-            self.setHelp(
-                "Click left mouse button to see spectrum and modify slope;"
-                + " right mouse button to finish and close window",
-                self.fig_spector,
-            )
-            self.fig_spector.show()
-            self.get_mouse_click(self.fig_spector.fig)
-            if self.mouse != 1:
-                break
-            if not self.x_mouse:
-                continue
-            il = np.argmin(abs(lpos - self.x_mouse))
-            if direction:
-                data = self.sensor1_inter[il, :]
-                pos_line = self.y_inter[il]
-            else:
-                data = self.sensor1_inter[:, il]
-                pos_line = self.x_inter[il]
-            depth1, depth2, isplit, intercept1, intercept2, fit, dd, kk, d, kkk = (
-                self.spector_line(data, dsamp, n_Ny, half_width)
-            )
-            dk = kk[1] - kk[0]
-            n0 = 0
-            y = np.zeros(n_Ny - 1)
-            y[:] = np.nan
-            y[n0 : isplit + 1] = intercept1 - kk[n0 : isplit + 1] * depth1 * 2
-            y[isplit + 2 :] = intercept2 - kk[isplit + 2 :] * depth2 * 2
-            y[isplit + 1] = np.nan
-            self.fig_FFT = newWindow("FFT", 800, 500)
-            self.ax_FFT = self.fig_FFT.fig.add_subplot()
-            self.ax_FFT.plot(kk, dd, "k")
-            self.ax_FFT.plot(kk, y, "r")
-            self.ax_FFT.plot(kkk, d, "r*")
-            self.ax_FFT.text(
-                np.mean(kk[n0 : isplit + 1]) + dk,
-                np.mean(y[n0 : isplit + 1]),
-                f"{depth1:0.2f}",
-                verticalalignment="bottom",
-                horizontalalignment="left",
-            )
-            self.ax_FFT.text(
-                np.mean(kk[isplit + 2 :]) + dk,
-                np.mean(y[isplit + 2 :]),
-                f"{depth2:0.2f}",
-                verticalalignment="bottom",
-                horizontalalignment="left",
-            )
-            self.ax_FFT.set_title(f"Line at {pos_line:0.1f}")
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                self.ax_FFT.set_ylabel("ln(Amplitude**2) sensor 1")
-                self.ax_FFT.set_xlabel("Wavenumber [rad/m] sensor 1")
-            else:
-                self.ax_FFT.set_ylabel("ln(Amplitude**2)")
-                self.ax_FFT.set_xlabel("Wavenumber [rad/m]")
-            self.setHelp(
-                "Draw line with left mouse button to get new slope. "
-                + "Single click to close without change",
-                self.fig_FFT,
-            )
-            self.fig_FFT.show()
-            self.followLine(self.fig_FFT.fig, self.ax_FFT, release_flag=True)
-            if len(self.coor_x) > 0 and self.coor_x[0] != self.coor_x[1]:
-                depths1[il] = (
-                    -(
-                        (self.coor_y[1] - self.coor_y[0])
-                        / (self.coor_x[1] - self.coor_x[0])
-                    )
-                    / 2
-                )
-                intercepts1[il] = self.coor_y[0] + depths1[il] * 2 * self.coor_x[0]
-                self.ax_FFT.text(
-                    self.coor_x[0],
-                    self.coor_y[0],
-                    f"  {depths1[il]:0.2f}",
-                    verticalalignment="bottom",
-                    horizontalalignment="left",
-                )
-                self.fig_FFT.canvas.draw()
-                self.get_mouse_click(self.fig_FFT.fig)
-            self.fig_FFT.close()
-            self.fig_spector.close()
-        self.fig_spector.close()
-        self.function = "main"
-        with open(
-            f"spector.dat_{self.dat[self.actual_plotted_file].data['type']}",
-            "w",
-            encoding="utf-8",
-        ) as fo:
-            fo.write("Line nr  position [m]    depth1 [m]    depth2 [m]    misfit\n")
-            for i, lp in enumerate(lpos):
-                fo.write(
-                    f"{i:7d}{lp:10.2f}{depths1[i]:10.2f}"
-                    + f"{depths2[i]:10.2f}    {fits[i]:0.5f}\n"
-                )
+        self.data.spector()
 
     def spector2D(self):
         """
@@ -2357,432 +1604,7 @@ class Main(QtWidgets.QWidget):
         "magnetic" or "gravity".
 
         """
-        # from sklearn.linear_model import LinearRegression as LR
-        self.function = "spector2D"
-        try:
-            x_min = self.x_inter.min()
-            x_max = self.x_inter.max()
-            dx = self.x_inter[1] - self.x_inter[0]
-            y_min = self.y_inter.min()
-            y_max = self.y_inter.max()
-            dy = self.y_inter[1] - self.y_inter[0]
-            d = max(dx, dy)
-        except AttributeError:
-            _ = QtWidgets.QMessageBox.warning(
-                None,
-                "Warning",
-                "Data are not yet interpolated.\nYou should do this "
-                + "before calling FFT.",
-                QtWidgets.QMessageBox.Close,
-                QtWidgets.QMessageBox.Close,
-            )
-            return
-        max_len_x = x_max - x_min
-        max_len_y = y_max - y_min
-        window_len = np.round(min(max_len_x, max_len_y) / 4, 0)
-        xstart = x_min + window_len / 2.0
-        xend = x_max - window_len / 2.0
-        nx = int((xend - xstart) / d)
-        ystart = y_min + window_len / 2.0
-        yend = y_max - window_len / 2.0
-        ny = int((yend - ystart) / d)
-        ntot = nx * ny
-        nfac = max(int(np.ceil(np.sqrt(ntot / 500))), 1)
-        step = d * nfac
-        n_Nys = [int(window_len / (2 * dx)), int(window_len / (2 * dy))]
-        n_Ny = np.min(n_Nys)
-        # Set parameters depending on measurement direction
-        results, okButton = dialog(
-            [
-                "Window length [m]",
-                "  Attention: there must be at least 16 points per window length\n"
-                + "             see below: Nr of FFT coefficients >= 8!",
-                "Step size [m]",
-                "Half width for maxima determination",
-                f"Number of FFT coefficients\nmax in X: {n_Nys[1]}, Y: {n_Nys[0]}",
-            ],
-            ["e", "l", "e", "e", "e"],
-            [window_len, None, step, 1, n_Ny],
-            "2D FFT parameters",
-        )
-        if okButton:
-            window_len = float(results[0])
-            step = float(results[2])
-            half_width = int(results[3])
-            n_Ny = int(results[4])
-        else:
-            print("No FFT analysis done")
-            return
-        n_Nys = [int(window_len / (2 * dx)), int(window_len / (2 * dy))]
-        if n_Ny < 8:
-            _ = QtWidgets.QMessageBox.warning(
-                None,
-                "Warning",
-                "For automatic depth determination the number of\n"
-                + "FFT coefficients must be >= 8\n"
-                + f"Actual value: N_coef: {n_Ny}\n\nSpector2D not calculated\n",
-                QtWidgets.QMessageBox.Close,
-                QtWidgets.QMessageBox.Close,
-            )
-            return
-        if n_Ny > n_Nys[0]:
-            _ = QtWidgets.QMessageBox.warning(
-                None,
-                "Warning",
-                "For automatic depth determination the number of\n"
-                + "FFT coefficients used for depth determination\n"
-                + "must be <= nr of Nyquist coefficient\n"
-                + f"Actual values: N_coef: {n_Ny}, Nyquist_y: {n_Nys[0]}\n\n"
-                + "Retry increasing window length or interpolate with smaller dy\n\n"
-                + "Spector2D not calculated\n",
-                QtWidgets.QMessageBox.Close,
-                QtWidgets.QMessageBox.Close,
-            )
-            return
-        if n_Ny > n_Nys[1]:
-            _ = QtWidgets.QMessageBox.warning(
-                None,
-                "Warning",
-                "For automatic depth determination the number of\n"
-                + "FFT coefficients used for depth determination\n"
-                + "must be <= nr of Nyquist coefficient\n"
-                + f"Actual values: N_coef: {n_Ny}, Nyquist_x: {n_Nys[1]}\n\n"
-                + "Retry increasing window length or interpolate with smaller dx\n\n"
-                + "Spector2D not calculated\n",
-                QtWidgets.QMessageBox.Close,
-                QtWidgets.QMessageBox.Close,
-            )
-            return
-        nr, nc = self.sensor1_inter.shape
-        # Prepare lists where to store the calculation results
-        nstep_x = int(step / dx)
-        nwin_x = int(window_len / dx)
-        if nwin_x % 2:
-            nwin_x -= 1
-        window_len_x = nwin_x * dx
-        nwinx2 = int(window_len_x / (2 * dx))
-        xstart = x_min + window_len_x / 2.0
-        n_xstart = int((xstart - self.x_inter[0]) / dx)
-        xend = x_max - window_len_x / 2.0
-        n_xend = int((xend - self.x_inter[0]) / dx) + 1
-        xcalc_pos = np.arange(xstart, xend + step / 2.0, step)
-        nstep_y = int(step / dy)
-        nwin_y = int(window_len / dy)
-        if nwin_y % 2:
-            nwin_y -= 1
-        window_len_y = nwin_y * dy
-        nwiny2 = int(window_len_y / (2 * dy))
-        ystart = y_min + window_len_y / 2.0
-        n_ystart = int((ystart - self.y_inter[0]) / dy)
-        yend = y_max - window_len_y / 2.0
-        n_yend = int((yend - self.y_inter[0]) / dy) + 1
-        ycalc_pos = np.arange(ystart, yend + step / 2.0, step)
-        nx_calc = len(xcalc_pos)
-        ny_calc = len(ycalc_pos)
-        depths_1 = np.zeros((ny_calc, nx_calc))
-        depths_2 = np.zeros((ny_calc, nx_calc))
-        depths1 = np.zeros((ny_calc, nx_calc))
-        depths2 = np.zeros((ny_calc, nx_calc))
-        depths3 = np.zeros((ny_calc, nx_calc))
-        depths4 = np.zeros((ny_calc, nx_calc))
-        intercepts1 = np.zeros((ny_calc, nx_calc))
-        intercepts2 = np.zeros((ny_calc, nx_calc))
-        intercepts3 = np.zeros((ny_calc, nx_calc))
-        intercepts4 = np.zeros((ny_calc, nx_calc))
-        isplits1 = np.zeros((ny_calc, nx_calc), dtype=int)
-        isplits2 = np.zeros((ny_calc, nx_calc), dtype=int)
-        fits = np.zeros((ny_calc, nx_calc))
-        ii = -1
-        xpos = np.zeros(nx_calc)
-        ypos = np.zeros(ny_calc)
-        for i in range(n_xstart, n_xend, nstep_x):
-            n1x = i - nwinx2
-            n2x = i + nwinx2
-            ii += 1
-            jj = -1
-            xpos[ii] = self.x_inter[i]
-            for j in range(n_ystart, n_yend, nstep_y):
-                jj += 1
-                n1y = j - nwiny2
-                n2y = j + nwiny2
-                ypos[jj] = self.y_inter[j]
-                data = self.sensor1_inter[n1y:n2y, i]
-                depth1, depth2, isplit1, intercept1, intercept2, fit1, dd, kk = (
-                    self.spector_line(data, dy, n_Ny, half_width)
-                )
-                depths1[jj, ii] = depth1
-                depths2[jj, ii] = depth2
-                intercepts1[jj, ii] = intercept1
-                intercepts2[jj, ii] = intercept2
-                isplits1[jj, ii] = isplit1
-                data = self.sensor1_inter[j, n1x:n2x]
-                depth3, depth4, isplit2, intercept3, intercept4, fit2, dd, kk = (
-                    self.spector_line(data, dx, n_Ny, half_width)
-                )
-                depths3[jj, ii] = depth3
-                depths4[jj, ii] = depth4
-                intercepts3[jj, ii] = intercept3
-                intercepts4[jj, ii] = intercept4
-                isplits2[jj, ii] = isplit2
-                if depth1:
-                    if depth3:
-                        depths_1[jj, ii] = (depth1 + depth3) * 0.5
-                        depths_2[jj, ii] = (depth2 + depth4) * 0.5
-                        fits[jj, ii] = np.sqrt((fit1**2 + fit2**2) * 0.5)
-                    else:
-                        depths_1[jj, ii] = depth1
-                        depths_2[jj, ii] = depth2
-                        fits[jj, ii] = fit1
-                elif depth3:
-                    depths_1[jj, ii] = depth3
-                    depths_2[jj, ii] = depth4
-                    fits[jj, ii] = fit2
-        while True:
-            self.fig_spect2, self.ax_spect2 = self.w.plotFloating(
-                depths_1,
-                xpos,
-                ypos,
-                wtitle="Depths from Spector&Grant",
-                sizeh=1200,
-                sizev=900,
-                ptitle=f"Spectral depth solutions, window length: {window_len} m",
-                xlabel="Easting [m]",
-                ylabel="Northing [m]",
-                clabel="Depth [m]",
-                percent=0.005,
-                c=self.color,
-            )
-            if self.w.geography_flag:
-                self.w.plot_geography(self.ax_spect2)
-            if self.w.plotLin_flag:
-                self.w.plot_lineaments(self.ax_spect2)
-                self.w.plot_lineaments(self.ax_spect2)
-            self.ax_spect2.set_xlim([np.nanmin(self.x_inter), np.nanmax(self.x_inter)])
-            self.ax_spect2.set_ylim([np.nanmin(self.y_inter), np.nanmax(self.y_inter)])
-            self.setHelp(
-                "Left click on map: show results of nearest point; "
-                + "Right click on map close window and return to main window",
-                self.fig_spect2,
-            )
-            self.get_mouse_click(self.fig_spect2.fig)
-            if not self.x_mouse:
-                continue
-            if self.mouse > 1:
-                self.fig_spect2.close()
-                break
-            self.fig_FFT2 = newWindow("FFT", 800, 500)
-            self.ax_FFT2 = self.fig_FFT2.fig.subplots(2, 1)
-            ixclick = np.argmin(abs(xpos - self.x_mouse))
-            ixpos = np.argmin(abs(self.x_inter - xpos[ixclick]))
-            iyclick = np.argmin(abs(ypos - self.y_mouse))
-            iypos = np.argmin(abs(self.y_inter - ypos[iyclick]))
-            data = self.sensor1_inter[iypos - nwiny2 : iypos + nwiny2, ixpos]
-            dd, kk = self.log_spect(data, dy, n_Ny)
-            self.ax_FFT2[0].plot(kk, dd, "k")
-            if depths1[iyclick, ixclick]:
-                depth1 = depths1[iyclick, ixclick]
-                intercept1 = intercepts1[iyclick, ixclick]
-                xxx = kk[0 : isplits1[iyclick, ixclick]]
-                yyy = intercept1 - xxx * depth1 * 2
-                self.ax_FFT2[0].plot(xxx, yyy, "r")
-                self.ax_FFT2[0].text(
-                    np.mean(xxx),
-                    np.mean(yyy),
-                    f"  {depth1:0.2f}",
-                    verticalalignment="bottom",
-                    horizontalalignment="left",
-                )
-                depth2 = depths2[iyclick, ixclick]
-                intercept2 = intercepts2[iyclick, ixclick]
-                xxx = kk[isplits1[iyclick, ixclick] :]
-                yyy = intercept2 - xxx * depth2 * 2
-                self.ax_FFT2[0].plot(xxx, yyy, "r")
-                self.ax_FFT2[0].text(
-                    np.mean(xxx),
-                    np.mean(yyy),
-                    f"{  depth2:0.2f}",
-                    verticalalignment="bottom",
-                    horizontalalignment="left",
-                )
-            self.ax_FFT2[0].set_title(f"N-S line at X = {xpos[ixclick]:0.1f}")
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                self.ax_FFT2[0].set_ylabel("ln(Amplitude**2) sensor 1")
-                self.ax_FFT2[0].set_xlabel("Wavenumber [rad/m] sensor 1")
-            else:
-                self.ax_FFT2[0].set_ylabel("ln(Amplitude**2)")
-                self.ax_FFT2[0].set_xlabel("Wavenumber [rad/m]")
-            data = self.sensor1_inter[iypos, ixpos - nwinx2 : ixpos + nwinx2]
-            dd, kk = self.log_spect(data, dx, n_Ny)
-            self.ax_FFT2[1].plot(kk, dd, "k")
-            if depths3[iyclick, ixclick]:
-                depth3 = depths3[iyclick, ixclick]
-                intercept3 = intercepts3[iyclick, ixclick]
-                xxx = kk[0 : isplits2[iyclick, ixclick]]
-                yyy = intercept3 - xxx * depth3 * 2
-                self.ax_FFT2[1].plot(xxx, yyy, "r")
-                self.ax_FFT2[1].text(
-                    np.mean(xxx),
-                    np.mean(yyy),
-                    f"  {depth3:0.2f}",
-                    verticalalignment="bottom",
-                    horizontalalignment="left",
-                )
-                depth4 = depths4[iyclick, ixclick]
-                intercept4 = intercepts4[iyclick, ixclick]
-                xxx = kk[isplits2[iyclick, ixclick] :]
-                yyy = intercept4 - xxx * depth4 * 2
-                self.ax_FFT2[1].plot(xxx, yyy, "r")
-                self.ax_FFT2[1].text(
-                    np.mean(xxx),
-                    np.mean(yyy),
-                    f"{  depth4:0.2f}",
-                    verticalalignment="bottom",
-                    horizontalalignment="left",
-                )
-            self.ax_FFT2[1].set_title(f"E-W line at Y = {ypos[iyclick]:0.1f}")
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                self.ax_FFT2[1].set_ylabel("ln(Amplitude**2) sensor 1")
-                self.ax_FFT2[1].set_xlabel("Wavenumber [rad/m] sensor 1")
-            else:
-                self.ax_FFT2[1].set_ylabel("ln(Amplitude**2)")
-                self.ax_FFT2[1].set_xlabel("Wavenumber [rad/m]")
-            # dk = kk[1]-kk[0]
-            # max_pos,d,_,_ = self.min_max(dd,half_width=half_width)
-            # kkk = kk[max_pos]
-            # n0 = 0
-            # self.ax_FFT.plot(kkk,d,"r*")
-            self.setHelp(
-                "Draw line with left mouse button in upper window to get new slope. "
-                + "Single click to close without change",
-                self.fig_FFT2,
-            )
-            self.fig_FFT2.show()
-            self.followLine(self.fig_FFT2.fig, self.ax_FFT2[0], release_flag=True)
-            if len(self.coor_x) > 0 and self.coor_x[0] != self.coor_x[1]:
-                depths1[iyclick, ixclick] = (
-                    -(
-                        (self.coor_y[1] - self.coor_y[0])
-                        / (self.coor_x[1] - self.coor_x[0])
-                    )
-                    / 2
-                )
-                intercepts1[iyclick, ixclick] = (
-                    self.coor_y[0] + depths1[iyclick, ixclick] * 2 * self.coor_x[0]
-                )
-                self.ax_FFT2[0].text(
-                    self.coor_x[0],
-                    self.coor_y[0],
-                    f"  {depths1[iyclick,ixclick]:0.2f}",
-                    verticalalignment="bottom",
-                    horizontalalignment="left",
-                )
-                self.fig_FFT2.canvas.draw()
-            #                self.get_mouse_click(self.fig_FFT2.fig)
-            self.setHelp(
-                "Draw line with left mouse button in lower window to get new slope. "
-                + "Double click to close without change",
-                self.fig_FFT2,
-            )
-            self.fig_FFT2.canvas.draw()
-            self.followLine(self.fig_FFT2.fig, self.ax_FFT2[1], release_flag=True)
-            if len(self.coor_x) > 0 and self.coor_x[0] != self.coor_x[1]:
-                depths3[iyclick, ixclick] = (
-                    -(
-                        (self.coor_y[1] - self.coor_y[0])
-                        / (self.coor_x[1] - self.coor_x[0])
-                    )
-                    / 2
-                )
-                intercepts1[iyclick, ixclick] = (
-                    self.coor_y[0] + depths3[iyclick, ixclick] * 2 * self.coor_x[0]
-                )
-                self.ax_FFT2[1].text(
-                    self.coor_x[0],
-                    self.coor_y[0],
-                    f"  {depths3[iyclick,ixclick]:0.2f}",
-                    verticalalignment="bottom",
-                    horizontalalignment="left",
-                )
-                self.fig_FFT2.canvas.draw()
-                self.setHelp("Click to finish", self.fig_FFT2)
-                self.get_mouse_click(self.fig_FFT2.fig)
-            self.fig_FFT2.close()
-            self.fig_spect2.close()
-
-        self.function = "main"
-        with open(
-            f"spector2D_{self.data_types[self.actual_plotted_file]}.dat",
-            "w",
-            encoding="utf-8",
-        ) as fo:
-            fo.write("Line nr  X [m]      Y[m]    depth1 [m]    depth2 [m]    misfit\n")
-            nr, nc = depths_1.shape
-            for i in range(nc):
-                for j in range(nr):
-                    if np.isfinite(depths_1[j, i]):
-                        fo.write(
-                            f"{i:7d}{xpos[i]:10.1f}{ypos[j]:10.1f}"
-                            + f"{depths_1[j,i]:10.2f}{depths_2[j,i]:10.2f}"
-                            + f"    {fits[j,i]:0.5f}\n"
-                        )
-
-    def gradient(self, data, dx, dy, filt=5.):
-        """
-        Calculate absolute gradient of a data set interpolated onto a regular grid.
-        
-        The grid step may be different in x and y directions.
-
-        Parameters
-        ----------
-        data : 2D numpy float array
-            Data for which gradient should be calculated.
-        dx : float
-            Grid step in x-direction.
-        dy : float
-            Grid step in y-direction.
-        filt : float
-            Size of gaussian filter applied to data before gradient calculation
-            in number of grid points (the maximum grid size from x and y
-            direction is the reference). If filt==0, no gaussian filter applied
-
-        Returns
-        -------
-        2D numpy float array with the same size as data
-            Absolute data gradient.
-
-        """
-        import scipy.ndimage as nd
-# Apply gaussian filter
-        if dx > dy:
-            sigx = filt
-            sigy = sigx*dx/dy
-        else:
-            sigy = filt
-            sigx = sigy*dy/dx
-        sigma = [sigy, sigx]
-        if sigx > 0.:
-            ny,nx = data.shape
-            d = np.zeros((ny+10,nx+10))
-            d[5:-5,5:-5] = data
-            for i in range(5):
-                d[i,5:-5] = data[0,:]
-                d[ny-1-i,5:-5] = data[-1,:]
-            for i in range(5):
-                d[:,i] = d[:,5]
-                d[:,nx+9-i] = d[:,-6]
-            d = nd.filters.gaussian_filter(d, sigma, mode='constant')
-            d = d[5:-5,5:-5]
-        else:
-            d = np.copy(data)
-        gx = np.zeros_like(d)
-        gy = np.zeros_like(d)
-        gx[:,1:-1] = (d[:,2:] + d[:,0:-2] - 2*d[:,1:-1])/(2*dx)
-        gx[:,0] = gx[:,1]
-        gx[:,-1] = gx[:,-2]
-        gy[1:-1,:] = (d[2:,:] + d[0:-2,:] - 2*d[1:-1,:])/(2*dy)
-        gy[0,:] = gy[1,:]
-        gy[-1,:] = gy[-2,:]
-        return np.sqrt(gx**2+gy**2)
+        self.data.spector2D()
 
     def tilt(self):
         """
@@ -2793,222 +1615,31 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        if self.dat[self.actual_plotted_file].data["grad_data"]:
-            tilt_ang, vgrad, vgrad2, hgrad = self.u.tilt(
-                self.sensor1_fill, self.grad_fill, self.dx, self.dy
-            )
-        else:
-            tilt_ang, vgrad, vgrad2, hgrad = self.u.tilt(
-                self.sensor1_fill, None, self.dx, self.dy
-            )
-        tilt_grd = self.gradient(tilt_ang, self.dx, self.dy)*1000.
-        max_pos, _ = self.min_max2D(tilt_grd, half_width=3)
-        tilt_grd[:,:] = 0.
-        tilt_grd[max_pos[0],max_pos[1]] = 1.
-        tilt_ang[self.mask1] = np.nan
-        tilt_grd[self.mask1] = np.nan
-        # zeroes = self.zero_xing2D(tilt_ang)
-        vgrad[self.mask1] = np.nan
-        vgrad2[self.mask1] = np.nan
-        hgrad[self.mask1] = np.nan
-        nr, nc = tilt_ang.shape
-        data = vgrad.reshape(nr, nc, 1)
-        data = np.concatenate((data, vgrad2.reshape(nr, nc, 1)), axis=2)
-        data = np.concatenate((data, hgrad.reshape(nr, nc, 1)), axis=2)
-        self.fig_grad, self.ax_grad = self.w.plotFloating(
-            data,
-            self.x_inter,
-            self.y_inter,
-            wtitle="Gradients",
-            sizeh=1200,
-            sizev=900,
-            ptitle=[
-                "Vertical gradient",
-                "Second vertical derivative",
-                "Horizontal gradient",
-            ],
-            percent=0.005,
-            xlabel=["Easting [m]", "Easting [m]", "Easting [m]"],
-            ylabel=["Northing [m]", "Northing [m]", "Northing [m]"],
-            clabel=[
-                f"Vert. grad. [{self.unit}/m]",
-                f"2nd vert. grad. [{self.unit}/m2]",
-                f"Hor. grad. [{self.unit}/m]",
-            ],
-            c=self.color,
-        )
-        if self.w.plotLin_flag:
-            self.w.plot_lineaments(self.ax_grad[0])
-            self.w.plot_lineaments(self.ax_grad[1])
-            self.w.plot_lineaments(self.ax_grad[2])
-        xmin = np.nanmin(self.x_inter)
-        xmax = np.nanmax(self.x_inter)
-        ymin = np.nanmin(self.y_inter)
-        ymax = np.nanmax(self.y_inter)
-        self.ax_grad[0].set_xlim([xmin, xmax])
-        self.ax_grad[0].set_ylim([ymin, ymax])
-        self.ax_grad[1].set_xlim([xmin, xmax])
-        self.ax_grad[1].set_ylim([ymin, ymax])
-        self.ax_grad[2].set_xlim([xmin, xmax])
-        self.ax_grad[2].set_ylim([ymin, ymax])
-
-        self.fig_tilt_ang, self.ax_tilt_ang = self.w.plotFloating(
-            tilt_ang,
-            self.x_inter,
-            self.y_inter,
-            wtitle="Tilt angle",
-            sizeh=1200,
-            sizev=900,
-            ptitle="Tilt angle",
-            xlabel="Easting [m]",
-            ylabel="Northing [m]",
-            clabel="Tilt_angle [rad]",
-            c=self.color,
-        )
-        if self.w.geography_flag:
-            self.w.plot_geography(self.ax_tilt_ang)
-        if self.w.plotLin_flag:
-            self.w.plot_lineaments(self.ax_tilt_ang)
-        # self.ax_tilt_ang.scatter(self.x_inter[zeroes[1]],self.y_inter[zeroes[0]],\
-        #                          c="k", s=4, marker=".")
-        self.ax_tilt_ang.set_xlim([np.nanmin(self.x_inter), np.nanmax(self.x_inter)])
-        self.ax_tilt_ang.set_ylim([np.nanmin(self.y_inter), np.nanmax(self.y_inter)])
-
-        self.fig_tilt, self.ax_tilt = self.w.plotFloating(
-            tilt_grd,
-            self.x_inter,
-            self.y_inter,
-            wtitle="Tilt angle gradient",
-            sizeh=1200,
-            sizev=900,
-            ptitle="Normalized tilt angle gradient",
-            xlabel="Easting [m]",
-            ylabel="Northing [m]",
-            clabel="Gradient maxima (n.u.)",
-            c=self.color,
-        )
-        if self.w.geography_flag:
-            self.w.plot_geography(self.ax_tilt)
-        if self.w.plotLin_flag:
-            self.w.plot_lineaments(self.ax_tilt)
-        self.ax_tilt.set_xlim([np.nanmin(self.x_inter), np.nanmax(self.x_inter)])
-        self.ax_tilt.set_ylim([np.nanmin(self.y_inter), np.nanmax(self.y_inter)])
-        self.setHelp(
-            "Left click add point, right click finish line. "
-            + "Immediate right click without chosen point: stop tilt routine",
-            self.fig_tilt,
-        )
-        while True:
-            self.followLine(self.fig_tilt.fig, self.ax_tilt)
-            # If followLine was exited with the wheel button, this means that no new line
-            # has been defined. It is then considered that the line nearest to the mouse click
-            # should be erased
-            if self.mouse == 2:
-                if len(list(self.lineaments.keys())) == 0:
-                    continue
-                xc = self.x_event
-                yc = self.y_event
-                min_lin = list(self.lineaments.keys())[0]
-                min_dist = (xc - self.lineaments[min_lin]["x"][0]) ** 2 + (
-                    yc - self.lineaments[min_lin]["y"][0]
-                ) ** 2
-                for ll, lin in enumerate(self.lineaments.items()):
-                    for i in range(len(lin["x"])):
-                        dist = (xc - lin["x"][i]) ** 2 + (yc - lin["y"][i]) ** 2
-                        if dist < min_dist:
-                            min_lin = ll
-                            min_dist = dist
-                print(f"Erase lineament {min_lin}")
-                del self.lineaments[min_lin]
-                self.fig_tilt.close()
-                self.fig_tilt, self.ax_tilt = self.w.plotFloating(
-                    tilt_grd,
-                    self.w.x_inter,
-                    self.w.y_inter,
-                    wtitle="Tilt angle gradient",
-                    sizeh=1200,
-                    sizev=900,
-                    percent=0.01,
-                    ptitle="Normalized tilt gradient",
-                    xlabel="Easting [m]",
-                    ylabel="Northing [m]",
-                    clabel="Gradient maxima (n.u.)",
-                    c=self.color,
-                )
-                if self.w.plotLin_flag:
-                    self.w.plot_lineaments(self.ax_tilt)
-                self.ax_tilt.set_xlim(
-                    [np.nanmin(self.x_inter), np.nanmax(self.x_inter)]
-                )
-                self.ax_tilt.set_ylim(
-                    [np.nanmin(self.y_inter), np.nanmax(self.y_inter)]
-                )
-                self.setHelp(
-                    "Left click add point, right click finish line (not integrated). "
-                    + "Immediate right click without chosen point: stop tilt routine. "
-                    + "Click with mouse wheel eliminates nearest lineament",
-                    self.fig_tilt,
-                )
-                continue
-            if len(self.coor_x) == 0:
-                self.fig_tilt.close()
-                self.fig_tilt_ang.close()
-                self.fig_grad.close()
-                break
-            self.nlineaments += 1
-            self.lineaments[self.nlineaments] = {}
-            self.lineaments[self.nlineaments]["x"] = np.array(self.coor_x[:-1])
-            self.lineaments[self.nlineaments]["y"] = np.array(self.coor_y[:-1])
-            self.lineaments[self.nlineaments]["type"] = (
-                f"{self.dat[self.actual_plotted_file].data['type']}"
-            )
-            if self.w.plotLin_flag:
-                self.w.plot_lineaments(self.ax_tilt)
-            self.fig_tilt.canvas.draw()
-        if self.nlineaments > 0:
+        self.lineaments = self.data.tilt()
+        self.nlineaments = len(self.lineaments)
+        if self.nlineaments:
             self.w.plotLineaments.setEnabled(True)
-            self.save_lineaments()
-        with open("tilt.dat", "w", encoding="utf-8") as fo:
-            fo.write("    X       Y     angle\n")
-            for i, x in enumerate(self.x_inter):
-                for j, y in enumerate(self.y_inter):
-                    fo.write(f"{x:0.2f} {y:0.2f} {tilt_ang[j,i]:0.3f}\n")
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+            self.w.plotLin_flag = True
+            self.plot_lineaments()
+        else:
+            self.w.plotLineaments.setEnabled(False)
+            self.w.plotLin_flag = False
+        for d in self.dat:
+            d.set_values(plotLin_flag=self.w.plotLin_flag)
+        self.data.set_values(plotLin_flag=self.w.plotLin_flag)
+        self.save_lineaments()
+        self.plotActual()
 
     def continuation(self):
         """
-        Calculate field at higher or lower altitude (Nabighian, Geophysics, 1972)
+        Wrapper to calculate field at higher or lower altitude
         """
-        results, okButton = dialog(
-            ["Continuation_height [m] (>0: upward)"],
-            ["e"],
-            [10.0],
-            "Field continuation",
-        )
-        if okButton:
-            self.dz = float(results[0])
-        else:
-            print("\nUpward continuation cancelled")
-            return
-        pro_data1 = self.u.continuation(self.sensor1_fill, self.dx, self.dy, self.dz)
-        self.sensor1_fill = np.copy(pro_data1)
-        pro_data1[self.mask1] = np.nan
-        self.sensor1_inter = np.copy(pro_data1)
-        if self.dat[self.actual_plotted_file].data["grad_data"]:
-            pro_data2 = self.u.continuation(
-                self.sensor2_fill, self.dx, self.dy, self.dz
-            )
-            self.sensor2_fill = np.copy(pro_data2)
-            pro_data2[self.mask1] = np.nan
-            pro_datag = (pro_data1 - pro_data2) / self.d_sensor
-            self.grad_fill = (self.sensor1_fill - self.sensor2_fill) / self.d_sensor
-            self.sensor2_inter = np.copy(pro_data2)
-            self.grad_inter = np.copy(pro_datag)
+        self.dz = self.data.continuation()
         self.treatments["up"] = True
         self.height += self.dz
-        self.plotActual(self.dat[self.actual_plotted_file].data)
+        self.plotActual()
 
-    def analyticSignal(self):
+    def analytic_signal(self):
         """
         Calculate analytic signal (Nabighian, Geophysics, 1972)
 
@@ -3017,653 +1648,347 @@ class Main(QtWidgets.QWidget):
         None.
 
         """
-        # Calculate analytic signal of first sensor
-        d = self.dat[self.actual_plotted_file].data[0]["direction"]
-        if d in ("N", "S"):
-            direction = 0
-        else:
-            direction = 1
-        analytic_signal1 = self.u.analyticSignal(self.sensor1_fill, self.dx, self.dy)
-        # Calculate instataneous phase and frequency
-        inst_phase1 = np.unwrap(np.angle(analytic_signal1))
-        if direction:
-            add = inst_phase1[-1, :].reshape(1, -1)
-            inst_freq1 = np.diff(inst_phase1, append=add, axis=0)
-        else:
-            add = inst_phase1[:, -1].reshape(-1, 1)
-            inst_freq1 = np.diff(inst_phase1, append=add)
-        # Set areas without measured data to nan
-        analytic_signal1[self.mask1] = np.nan
-        inst_phase1[self.mask1] = np.nan
-        inst_freq1[self.mask1] = np.nan
-        xmin = np.nanmin(self.x_inter)
-        xmax = np.nanmax(self.x_inter)
-        ymin = np.nanmin(self.y_inter)
-        ymax = np.nanmax(self.y_inter)
-        # The following commented lines allow computation of instantaneous phases and frequencies
-        #     of the analytic signal. Since the results were not convincing, I commented the
-        #     plotting of these data, but maybe with other data it would be worthwhile
-        #     looking at them again. In this case, indent the first line following the
-        #    commented "else"
-        # if self.w.grad_data:
-        #     analytic_signal2 = self.w.analyticSignal(self.sensor2_fill,self.dx,self.dy)
-        #     inst_phase2 = np.unwrap(np.angle(analytic_signal2))
-        #     if self.w.direction:
-        #         add = inst_phase2[-1,:].reshape(1,-1)
-        #         inst_freq2 = np.diff(inst_phase2, append=add)
-        #     else:
-        #         add = inst_phase2[:,-1].reshape(-1,1)
-        #         inst_freq2 = np.diff(inst_phase2, append=add)
-        #     analytic_signal2[self.mask2==True] = np.nan
-        #     inst_phase2[self.mask2==True] = np.nan
-        #     inst_freq2[self.mask2==True] = np.nan
-        # nr = analytic_signal1.shape[0]
-        # nc = analytic_signal1.shape[1]
-        # if self.w.grad_data:
-        #     data = abs(analytic_signal1).reshape(nr,nc,1)
-        #     data = np.concatenate((data,abs(analytic_signal2).reshape(nr,nc,1)),axis=2)
-        #     self.fig_ana,self.ax_ana = self.w.plotFloating(data,self.w.x_inter,\
-        #                       self.w.y_inter,wtitle="Analytic signal", sizeh=1200,\
-        #                       sizev=900,ptitle=["Analytic signal of sensor 1",\
-        #                                         "Analytic signal of sensor 2"],\
-        #                       xlabel=["Easting [m]","Easting [m]"], ylabel=["Northing [m]",
-        #                       "Northing [m]"],\
-        #                       clabel=[f"Analytic signal [{self.unit}/m]",\
-        #                               f"Analytic signal [{self.unit}/m]"],percent=0.005)
-        #     if self.w.plotLin_flag:
-        #         self.w.plot_lineaments(self.ax_ana[0])
-        #         self.w.plot_lineaments(self.ax_ana[1])
-        #     self.ax_ana[0].set_xlim([xmin,xmax])
-        #     self.ax_ana[0].set_ylim([ymin,ymax])
-        #     self.ax_ana[1].set_xlim([xmin,xmax])
-        #     self.ax_ana[1].set_ylim([ymin,ymax])
-        # else:
-        data = abs(analytic_signal1)
-        # Plot analytic signal
-        self.fig_ana, self.ax_ana = self.w.plotFloating(
-            data,
-            self.x_inter,
-            self.y_inter,
-            wtitle="Analytic signal",
-            sizeh=1200,
-            sizev=900,
-            ptitle="Analytic signal",
-            c=self.color,
-            xlabel="Easting [m]",
-            ylabel="Northing [m]",
-            clabel=f"Analytic signal [{self.unit}/m]",
-            percent=0.005,
-        )
-        # If lineaments have been measured, plot them now
-        if self.w.plotLin_flag:
-            self.w.plot_lineaments(self.ax_ana)
-        self.ax_ana.set_xlim([xmin, xmax])
-        self.ax_ana.set_ylim([ymin, ymax])
-        if self.dat[self.actual_plotted_file].data["grad_data"]:
-            self.ax_ana.grid(visible=True, which="both")
-        self.ax_ana.xaxis.set_minor_locator(AutoMinorLocator())
-        self.ax_ana.yaxis.set_minor_locator(AutoMinorLocator())
-        self.setHelp(
-            "Click left mouse button to see analytic signal of one line in "
-            + "Y, right: in X; Wheel to finish and close window",
-            self.fig_ana,
-        )
-        while True:
-            # Wait for mouse click. Left mouse click will trigger inversion of analytic
-            #      signal for depths along N-S lines, right mouse click along E-W lines.
-            #      Clicking on wheel finishes this module.
-            # The line neares to the mouse click will be shown in an own window with
-            #     inversion results
-            self.get_mouse_click(self.fig_ana.fig)
-            if not self.x_mouse or not self.y_mouse:
-                continue
-            if self.mouse == 2:
-                self.fig_ana.close()
-                self.function = "main"
-                return
-            if self.mouse == 1:
-                nline = np.argmin(abs(self.x_inter - self.x_mouse))
-                pos = self.y_inter
-                pos_line = self.x_inter[nline]
-                text = f"{pos_line} East"
-                text_x = "Northing [m]"
-                nl = len(self.x_inter)
-                direct = "y"
-            else:
-                nline = np.argmin(abs(self.y_inter - self.y_mouse))
-                pos = self.x_inter
-                pos_line = self.y_inter[nline]
-                text = f"{pos_line} North"
-                text_x = "Easting [m]"
-                nl = len(self.y_inter)
-                direct = "x"
-            dx = pos[1] - pos[0]
-            slope = []
-            intercept = []
-            depth = []
-            alpha = []
-            x_center = []
-            y_center = []
-            fit = []
-            pmax = []
-            # Interpretation is based on the squared analytic signal
-            d2 = data**2
-            index = np.isnan(d2)
-            d2[index] = 0.0
-            #            dmax = d2.max()
-            # Mask valaues smaller than 1/1000 of maximum values by setting them to negative
-            #      values
-            dd = np.copy(d2)
-            hist, edges = np.histogram(d2.flatten(), bins=1000, density=True)
-            dedge = edges[1] - edges[0]
-            cum = np.cumsum(hist) * dedge
-            nlim = int(len(cum) * 0.85)
-            self.fig_q = newWindow("Analytic signal quantiles", 800, 500)
-            self.ax_q = self.fig_q.fig.add_subplot()
-            self.ax_q.plot(edges[1:-nlim], cum[:-nlim])
-            self.ax_q.set_title("Cumulative sum analytic signal")
-            self.ax_q.set_xlabel("value")
-            self.ax_q.set_ylabel("quantile")
-            self.setHelp("Click left mouse button to define threshold", self.fig_q)
-            self.fig_q.show()
-            self.get_mouse_click(self.fig_q)
-            dmin = self.x_mouse
-            self.fig_q.close()
-            results, okButton = dialog(
-                ["Threshold", "Minimum depth", "Maximum depth"],
-                ["e", "e", "e"],
-                [dmin, 0, 2000],
-                "Analytic signal parameters",
-            )
-            if okButton:
-                dmin = float(results[0])
-                depth_min = float(results[1])
-                depth_max = float(results[2])
-            dd[d2 < dmin] = -1.0
-            # prepare window with inversion results of clicked line
-            self.fig_sig = newWindow("Analytic signal inversion", 800, 500)
-            # Start loop over lines
-            s_best = 1.0e10
-            i_best = 0.0
-            x_best = 0.0
-            depth_min = 0.0
-            depth_max = 0.0
-            for ll in range(nl):
-                if direct == "y":
-                    d = np.copy(d2[:, ll])
-                    d_interest = np.copy(d2[:, ll])
-                    d_interest[d < dmin] = -1.0
-                    xline = self.x_inter[ll]
-                else:
-                    d = np.copy(d2[ll, :])
-                    d_interest = np.copy(dd[ll, :])
-                    yline = self.y_inter[ll]
-                # If no data larger than the threshold exist on the line, continue with next line
-                if d_interest.max() < 0.0:
-                    continue
-                # Il line corresponds to clicked one, plot analytic signal
-                if ll == nline:
-                    self.ax_sig = self.fig_sig.fig.add_subplot()
-                    self.ax_sig.plot(pos, d, "k*", label="Analytic signal")
-                    self.ax_sig.plot(
-                        pos[d_interest > 0],
-                        d_interest[d_interest > 0],
-                        "g*",
-                        label="Unused above threshold",
-                    )
-                    self.ax_sig.set_title(f"Squared analytic signal at {text}")
-                    self.ax_sig.set_xlabel(text_x)
-                    self.ax_sig.set_ylabel(f"Amplitude [{self.unit}/m]**2")
-                # Find maxim and minima along line
-                max_pos, _, min_pos, _ = self.min_max(d_interest, half_width=2)
-                lab_flag = False
-                # Start loop over all found maxima
-                for p in max_pos:
-                    # regression.append(None)
-                    ff = np.inf
-                    # Search points belonging to the actual maximum. Limit is found when either
-                    #    a negative value is found (too small analytic signal to be interpreted) or
-                    #    when the next relative minimum is found
-                    for k in range(p, -1, -1):
-                        if d_interest[k] < 0.0 or k in min_pos:
-                            break
-                    n1 = k + 1
-                    for k in range(p, len(d_interest)):
-                        if d_interest[k] < 0.0 or k in min_pos:
-                            break
-                    n2 = k
-                    # If less than 4 points have been found belonging to the maximum, dont threat
-                    #    this maximum
-                    if n2 - n1 < 3:
-                        continue
-                    # Do inversion
-                    # For this the inverse of squared analytic signal should have a linear
-                    #     relation with the squared distance from the maximum.
-                    #     Since the exact position of the maximum is not know, suppose that it is
-                    #     located in the range measured maximum +/- 1/2*data spacing
-                    #     The regression line is calculated using the squared amplitude as weight.
-                    #     In this way, the high amplitudes have a stonger weight for the inversion
-                    #     than the small ones.
-                    #     The obtaines slope is the inverse of the parameter alpha, the intercept
-                    #     corresponds to (depth/alpha)**2
+        self.data.analytic_signal()
 
-                    # Calculate inverse of squared amplitude (add a small value to avoid
-                    # division by 0)
-                    y = 1 / (d_interest[n1:n2] + d_interest[p] * 1e-20)
-                    # Test positions around measured maximum with a step of dx/10 for best solution
-                    for x0 in np.arange(pos[p] - dx / 2.0, pos[p] + dx / 2.0, dx / 10):
-                        # x contains the squared distance from maximum
-                        x = (pos[n1:n2] - x0) ** 2
-                        # G is the Frechet matrix
-                        G = np.ones((len(x), 2))
-                        G[:, 0] = x
-                        # C contains the weights
-                        C = np.diag(1.0 / y**2)
-                        # Invert for regression line coefficients
-                        mat1 = np.matmul(np.transpose(G), C)
-                        coefs = np.matmul(
-                            np.matmul(np.linalg.inv(np.matmul(mat1, G)), mat1), y
-                        )
-                        y_fit = np.matmul(G, coefs)
-                        f = np.sum((y - y_fit) ** 2)
-                        # If fit is better than earlier values, store corresponding
-                        # parameters, but only
-                        #    if slope and intercept are positive
-                        if f < ff and coefs[0] > 0.0 and coefs[1] > 0.0:
-                            s_best = coefs[0]
-                            i_best = coefs[1]
-                            x_best = x0
-                            ff = f
-                    # If a best fit was found, store the parameters
-                    if np.isfinite(ff):
-                        dep = (
-                            np.sqrt(i_best / s_best)
-                            - self.dat[self.actual_plotted_file].data["height"]
-                        )
-                        if depth_min <= dep <= depth_max:
-                            slope.append(s_best)
-                            intercept.append(i_best)
-                            alpha.append(np.sqrt(1 / s_best))
-                            depth.append(dep)
-                            if direct == "y":
-                                y_center.append(x_best)
-                                x_center.append(xline)
-                            else:
-                                y_center.append(yline)
-                                x_center.append(x_best)
-                            fit.append(np.sqrt(ff))
-                            pmax.append(p)
-                            # If line corresponds to picked one, plot results into floating window
-                            if ll == nline:
-                                xx = (pos[n1:n2] - x_best) ** 2
-                                yy = xx * s_best + i_best
-                                yy = 1 / yy
-                                if lab_flag:
-                                    self.ax_sig.plot(
-                                        pos[n1:n2], d_interest[n1:n2], "r*"
-                                    )
-                                    self.ax_sig.plot(pos[p], d_interest[p], "b*")
-                                    self.ax_sig.plot(pos[n1:n2], yy, "r")
-                                else:
-                                    self.ax_sig.plot(
-                                        pos[n1:n2],
-                                        d_interest[n1:n2],
-                                        "r*",
-                                        label="Fitted points",
-                                    )
-                                    self.ax_sig.plot(
-                                        pos[p],
-                                        d_interest[p],
-                                        "b*",
-                                        label="Fitted maximum",
-                                    )
-                                    self.ax_sig.plot(
-                                        pos[n1:n2], yy, "r", label="Calculated signal"
-                                    )
-                                lab_flag = True
-                                self.ax_sig.text(
-                                    x_center[-1],
-                                    yy.max(),
-                                    f"h:{depth[-1]:0.1f}, al:{alpha[-1]:0.2f}",
-                                )
-                if ll == nline:
-                    self.ax_sig.legend(bbox_to_anchor=(1, 1), loc="upper right")
-            slope = np.array(slope)
-            intercept = np.array(intercept)
-            alpha = np.array(alpha)
-            depth = np.array(depth)
-            x_center = np.array(x_center)
-            y_center = np.array(y_center)
-            fit = np.array(fit)
-            # Store results into file, name depends on the directions used for calculation
-            if direct == "y":
-                file = "Analytic-signal-solutions_N-S-lines.dat"
-            else:
-                file = "Analytic-signal-solutions_E-W-lines.dat"
-            with open(file, "w", encoding="utf-8") as fo:
-                fo.write("     X        Y    Depth[m]   Alpha    Fit\n")
-                for i, d in enumerate(depth):
-                    fo.write(
-                        f"{x_center[i]:0.1f} {y_center[i]:0.1f} "
-                        + f"{d:0.2f} {alpha[i]:0.3f} {fit[i]:0.6f}\n"
-                    )
-            self.setHelp("Click any mouse button to close window", self.fig_sig)
-            self.fig_sig.show()
-            # Wait for click within results window to close it
-            self.get_mouse_click(self.fig_sig)
-            self.fig_sig.close()
-            # Plot the obtained depths onto map of analytic signal
-            #            vmin = np.quantile(depth,0.01)
-            vmin = depth.min()
-            vmax = np.quantile(depth, 0.99)
-            nc = -int(np.log10(vmax)) + 2
-            dv = round((vmax - vmin) / 10, nc)
-            vmin = np.ceil(vmin / dv) * dv
-            v = list(np.arange(vmin, vmin + 10.5 * dv, dv))
-            cmap = plt.get_cmap("hot_r")
-            norm = colors.BoundaryNorm(v, cmap.N)
-            gna = self.ax_ana.scatter(x_center, y_center, c=depth, cmap=cmap, norm=norm)
-            # Plot colorbar for depths into the axis
-            cbbox = inset_axes(self.ax_ana, "10%", "30%", loc="upper left")
-            [cbbox.spines[k].set_visible(False) for k in cbbox.spines]
-            cbbox.xaxis.set_visible(False)
-            cbbox.yaxis.set_visible(False)
-            cbbox.set_facecolor([1, 1, 1, 0.7])
-            cax = inset_axes(cbbox, "25%", "90%", loc="center left")
-            dbar = self.fig_ana.fig.figure.colorbar(
-                gna,
-                cax=cax,
-                extend="max",
-                orientation="vertical",
-                anchor=(0, 0),
-                shrink=0.5,
-            )
-            dbar.ax.set_ylabel("depth [m]")
-            ncd = -int(np.log10(dmin)) + 2
-            self.ax_ana.set_title(
-                f"{self.dat[self.actual_plotted_file].data['type']}"
-                + " analytic signal and depth "
-                + f"solutions in {direct} direction, "
-                + f"threshold = {np.round(dmin,ncd)}"
-            )
-            self.setHelp(
-                "Click left mouse button to see analytic signal of one "
-                + "line in Y, right: in X; Wheel to finish "
-                + "and close window",
-                self.fig_ana,
-            )
-            self.fig_ana.canvas.draw()
-
-    def followLine(self, fig, ax, release_flag=False, nleft=1, nright=1):
+    def inver2D(self):
         """
-        Pull line across plot
-        Parameters
-        ----------
-        fig, ax : names of figures and axis where to follow the line
-        release_flag (boolean): If True, end of line when left button released \
-                                if False, end of line triggered by pressing right button
-        nleft (int): if 0 start line for negative direction at origin \
-                     if not, start line at the position of first click
-        nright (int): if 0 start line for positive direction at origin \
-                     if not, start line at the position of first click
-                     
-        Returns
-        -------
-        event.button
-
-        Mouse button pressed to exit sunction (may be 2 for wheel ar 3
-        for right button)
-        
-        Left button adds new point. right button finishes. Wheel erases last
-        clicked point or, if no points is available, returns
-        """
-        global figure
-
-        def onPress(event):
-            global figure
-            self.line_click = False
-            if event.button == 1:  # left mouse button is pressed
-                if event.xdata is None or event.ydata is None:
-                    self.mouse = 1
-                    self.x_event = event.xdata
-                    self.y_event = event.ydata
-                    return
-                if len(self.coor_x) == 0:
-                    if (event.xdata < 0 and nleft == 0) or (
-                        event.xdata >= 0 and nright == 0
-                    ):
-                        self.start = [0, 0]
-                        self.coor_x.append(0)
-                        self.coor_y.append(0)
-                    else:
-                        self.start = [event.xdata, event.ydata]
-                        self.coor_x.append(event.xdata)
-                        self.coor_y.append(event.ydata)
-                    if event.xdata < 0:
-                        self.side = -1
-                    else:
-                        self.side = 1
-                    self.background = figure.canvas.copy_from_bbox(figure.bbox)
-                self.coor_x.append(
-                    event.xdata
-                )  # set starting point initially also as end point
-                self.coor_y.append(event.ydata)
-                self.canvas = self.line.figure.canvas
-                self.axl = self.line.axes
-                self.line.set_data(self.coor_x, self.coor_y)
-                self.axl.draw_artist(self.line)
-                self.cidmotion = self.line.figure.canvas.mpl_connect(
-                    "motion_notify_event", onMotion
-                )  # set action on mouse motion
-                if release_flag:
-                    self.cidrelease = self.line.figure.canvas.mpl_connect(
-                        "button_release_event", onRelease
-                    )  # set action on mouse release
-            elif event.button == 3:  # if right button is pressed, finish
-                self.mouse = 3
-                self.x_event = event.xdata
-                self.y_event = event.ydata
-                self.line.figure.canvas.mpl_disconnect(self.cidpress)
-                self.line_click = False
-                # try:
-                self.line.figure.canvas.mpl_disconnect(self.cidmotion)
-                if len(self.coor_x) > 0:
-                    self.line_click = True
-                # except:
-                #     self.line_click = False
-                self.line.set_animated(False)
-                if self.line_click:
-                    figure.canvas.restore_region(self.background)
-                self.background = None
-                self.released = True
-                return
-            else:  # Wheel is pressed, erase last point
-                if len(self.coor_x) > 0:
-                    print(f"Erase point ({self.coor_x[-1]},{self.coor_y[-1]})")
-                    del self.coor_x[-1]
-                    del self.coor_y[-1]
-                    self.canvas = self.line.figure.canvas
-                    self.axl = self.line.axes
-                    self.line.set_data(self.coor_x, self.coor_y)
-                    self.axl.draw_artist(self.line)
-                    self.cidmotion = self.line.figure.canvas.mpl_connect(
-                        "motion_notify_event", onMotion
-                    )  # set action on mouse motion
-                else:
-                    self.mouse = 2
-                    self.x_event = event.xdata
-                    self.y_event = event.ydata
-                    self.line.figure.canvas.mpl_disconnect(self.cidpress)
-                    self.line_click = False
-                    # try:
-                    self.line.figure.canvas.mpl_disconnect(self.cidmotion)
-                    if len(self.coor_x) > 0:
-                        self.line_click = True
-                    # except:
-                    #     self.line_click = False
-                    self.line.set_animated(False)
-                    if self.line_click:
-                        figure.canvas.restore_region(self.background)
-                    self.background = None
-                    self.released = True
-                    return
-
-        def onRelease(event):
-            # If line finishes when button is released do this here
-            global figure
-            self.line.figure.canvas.mpl_disconnect(self.cidpress)
-            self.line.figure.canvas.mpl_disconnect(self.cidmotion)
-            self.line.figure.canvas.mpl_disconnect(self.cidrelease)
-            self.line.set_animated(False)
-            if len(self.coor_x) > 0:
-                figure.canvas.restore_region(self.background)
-            self.background = None
-            self.released = True
-            return False
-
-        def onMotion(event):
-            global figure
-            if event.xdata is None or event.ydata is None:
-                return False
-            # set second point of line as actual mouse position
-            self.coor_x[-1] = event.xdata
-            self.coor_y[-1] = event.ydata
-            self.line.set_data(self.coor_x, self.coor_y)  # Draw new line
-            self.line.set_color("k")
-            self.canvas = self.line.figure.canvas
-            self.axl = self.line.axes
-            figure.canvas.restore_region(self.background)
-            self.axl.draw_artist(self.line)
-            self.canvas.blit(self.axl.bbox)
-            return True
-
-        # set flags and initialize coordinates
-        self.released = False
-        self.start = []
-        self.coor_x = []
-        self.coor_y = []
-        figure = fig
-        (self.line,) = ax.plot(self.coor_x, self.coor_y, "k", animated=True)
-        self.cidpress = self.line.figure.canvas.mpl_connect(
-            "button_press_event", onPress
-        )
-        # As long as release flag is not set listen to events
-        while self.released is not True:
-            QtCore.QCoreApplication.processEvents()
-
-    def eventFilter(self, obj, event):
-        """
-        Function interprets keyboard events. It reacts only on key release !
-        TODO
-
-        Parameters
-        ----------
-        obj : TYPE Object
-            The object that contains the window where the cursor should be so
-            the keystroke is captured, i.e. Main.window
-
-        event : Qt event
-            Any QT event, although only key-release events are treated.
+        Do a 2D inversion along an interactively chosen line
 
         Returns
         -------
         None.
 
         """
-        #        from PyQt5.QtGui import QWindow
-        if event.type() == QtCore.QEvent.KeyRelease and obj is self.window:
-            pass
-        # In main function, only "+" and "-" keys have a meaning, changing amplitude
-        #             if self.function == "main":
-        #                 if event.key() == 43:
-        #                     self.window.changeAmp(1)
-        #                 elif event.key() == 45:
-        #                     self.window.changeAmp(-1)
-        #                 elif event.key() == 16777234:
-        # #     If Left arrow is pressed, choose next block to be plotted to the left
-        #                     self.window.nextBlock(-1)
-        #                 elif event.key() == 16777236:
-        # #     If Right arrow is pressed, choose next block to be plotted to the right
-        #                     self.window.nextBlock(1)
-        # # in pickMove function, the keyboard arrows are checkes with possible SHFT and CTRL
-        #             elif self.function == "pick_move":
-        #                 if event.key() == 16777234:
-        # #     If Left arrow is pressed, choose next trace to the left
-        #                     self.window.shiftPickTrace(-1)
-        #                 elif event.key() == 16777236:
-        # #     If Right arrow is pressed, choose next trace to the right
-        #                     self.window.shiftPickTrace(1)
-        # #     If Up key is pressed, move pick upwards
-        #                 elif event.key() == 16777235:
-        #                     if event.modifiers() & Qt.ShiftModifier:
-        # #       With shift by 10 samples
-        #                         self.window.movePick(10)
-        #                     elif event.modifiers() & Qt.ControlModifier:
-        # #       With CTRL by 1 milisecond
-        #                         nshift = 0.001/self.data.dt
-        #                         self.window.movePick(nshift)
-        #                     else:
-        # #       Without modifier by 1 sample
-        #                         self.window.movePick(1)
-        # #     If Down key is pressed, move pick upwards
-        #                 elif event.key() == 16777237:
-        #                     if event.modifiers() & Qt.ShiftModifier:
-        # #       With shift by 10 samples
-        #                         self.window.movePick(-10)
-        #                     elif event.modifiers() & Qt.ControlModifier:
-        # #       With CTRL by 1 milisecond
-        #                         nshift = 0.001/self.data.dt
-        #                         self.window.movePick(-nshift)
-        #                     else:
-        # #       Without modifier by 1 sample
-        #                         self.window.movePick(-1)
-        # # in pickMove function, the keyboard arrows are checkes with possible SHFT and CTRL
-        #             elif self.function == "uncertainty":
-        #                 if event.key() == 16777234:
-        # #     If Left arrow is pressed, choose next trace to the left
-        #                     self.window.shiftPickTrace(-1)
-        #                 elif event.key() == 16777236:
-        # #     If Right arrow is pressed, choose next trace to the right
-        #                     self.window.shiftPickTrace(1)
-        # #     If Up key is pressed, move pick upwards
-        #                 elif event.key() == 16777235:
-        #                     if event.modifiers() & Qt.ShiftModifier:
-        # #       With shift by 10 samples
-        #                         self.window.changeUnc(10)
-        #                     elif event.modifiers() & Qt.ControlModifier:
-        # #       With CTRL by 1 milisecond
-        #                         nshift = 0.001/self.data.dt
-        #                         self.window.changeUnc(nshift)
-        #                     else:
-        # #       Without modifier by 1 sample
-        #                         self.window.changeUnc(1)
-        # #     If Down key is pressed, move pick upwards
-        #                 elif event.key() == 16777237:
-        #                     if event.modifiers() & Qt.ShiftModifier:
-        # #       With shift by 10 samples
-        #                         self.window.changeUnc(-10)
-        #                     elif event.modifiers() & Qt.ControlModifier:
-        # #       With CTRL by 1 milisecond
-        #                         nshift = 0.001/self.data.dt
-        #                         self.window.changeUnc(-nshift)
-        #                     else:
-        # #       Without modifier by 1 sample
-        #                         self.window.changeUnc(-1)
-        #             elif self.function == "vfilt":
-        #                 if self.window.verticalSlider.isVisible() and event.key() == 16777220:
-        #                     self.window.verticalSlider.setVisible(False)
-        # # Check whether the letter C has been types in tomography result window
-        # #       No idea why, but after typing C the first time, the event gets associated to
-        # #       2 types of objects, rP.newWindow and PyQt5.QtGui.QWindow and the dialogue
-        # #       window appears again after plotting the tomography results with the new
-        # #       settings. Only when the object type is QWindow, the event should be
-        # #       accepted.
-        # # This works as long as only one key is pressed (so, do not press SHFT+C), just "c"
-        # elif event.type() == QtCore.QEvent.KeyRelease and self.function == "linePlot":
-        #     if type(obj) is QWindow:
-        #         if event.key() == 67 or event.key() == 16777248:
-        #             self.utilities.invCol()
-        return QtWidgets.QWidget.eventFilter(self, obj, event)
+        earth = deepcopy(self.earth)
+        earth.dec -= self.data.data["line_declination"]
+        data = []
+        x = []
+        y = []
+        z = []
+        data_type = self.data_types[self.actual_plotted_file][0]
+        xx, yy, s1, s2, direction = self.plotLine(plot_flag=False)
+        zz = np.ones_like(xx) * self.data.data["height"]
+        if direction in ("N", "S", 0.0, 180.0):
+            file = f"Inver2D_line_{int(yy)}m-E"
+        else:
+            file = f"Inver2D_line_{int(yy)}m-N"
+        data.append(s1)
+        x.append(xx)
+        y.append(None)
+        z.append(zz)
+        if s2[0] is not None:
+            x.append(xx)
+            y.append(None)
+            z.append(np.ones_like(xx) * self.data.data["height2"])
+            data.append(s2)
+        inv = inversion(data, x, y, z, earth=earth, data_type=data_type)
+        # Get area of initial prisms and extract data to be inverted
+        ret = inv.get_area2D()
+        if not ret:
+            return
+        # Define inversion parameters
+        ret = inv.get_inversion_parameters(data_type)
+        if not ret:
+            return
+        # Set overall data and parameter variances
+        ret = inv.get_variances()
+        if not ret:
+            return
+        while True:
+            inv.run_inversion()
+            ret = inv.show_results2D(file)
+            if not ret:
+                break
+            ret = inv.get_inversion_parameters(data_type)
+            if not ret:
+                break
+            ret = inv.get_variances()
+            if not ret:
+                break
+        inv.save_model()
+
+    def inver3D(self):
+        """
+        Do a 3D inversion of data shown on screen
+
+        Data must be gridded.
+
+        It is possible to reduce the area to be inverted and the number of
+        data points, taking one point out of n.
+
+        The user will be asked interactively for the area to be inverted, for
+        general inversion control parameters like the maximum number of
+        iterations, other stopping conditions and smoothing and data and
+        parameter variances.
+
+        Returns
+        -------
+        None.
+
+        """
+        earth = deepcopy(self.earth)
+        earth.dec -= self.data.data["line_declination"]
+        if self.inter_flag:
+            data_type = self.data_types[self.actual_plotted_file][0]
+            data = []
+            x = []
+            y = []
+            z = []
+            data.append(self.sensor1_inter)
+            xx, yy = np.meshgrid(self.x_inter, self.y_inter)
+            x.append(xx)
+            y.append(yy)
+            z.append(np.ones_like(y) * self.data.data["height"])
+            if self.dat[self.actual_plotted_file].data["grad_data"]:
+                data.append(self.sensor2_inter)
+                x.append(xx)
+                y.append(yy)
+                z.append(np.ones_like(yy) * (self.data.data["height2"]))
+            inv = inversion(data, x, y, z, earth=earth, data_type=data_type)
+            # Get area of initial prisms and extract data to be inverted
+            ret = inv.get_area3D()
+            if not ret:
+                return
+            # Define inversion parameters
+            ret = inv.get_inversion_parameters(data_type)
+            if not ret:
+                return
+            # Set overall data and parameter variances
+            ret = inv.get_variances()
+            if not ret:
+                return
+            # Do inversion
+            while True:
+                inv.run_inversion()
+                ret = inv.show_results3D()
+                if not ret:
+                    break
+                ret = inv.get_inversion_parameters(data_type)
+                if not ret:
+                    break
+                ret = inv.get_variances()
+                if not ret:
+                    break
+            inv.save_model()
+            os.remove("prism_control.dat")
+            os.remove("par_hist.dat")
+
+        else:
+            _ = QtWidgets.QMessageBox.warning(
+                None,
+                "Warning",
+                "For 3D inversion, data must be interpolated onto a "
+                + "regular grid.\n\nUse Utilities->Interpolate\n"
+                + "and start inversion again",
+                QtWidgets.QMessageBox.Close,
+                QtWidgets.QMessageBox.Close,
+            )
+            return
+
+    def synthetic_model(self):
+        """
+        Define a 3D model composed of rectangular vertical prisms and calculate
+        its effect. By default, the same type of data is calculated as the one
+        of the read data (magnetic vs gravity and if magnetic, the same
+        parameters for the Earth's field)')
+
+        Returns
+        -------
+        None.
+
+        """
+        data_type = self.data_types[self.actual_plotted_file][0]
+        x, y, z, sus, rem, rem_i, rem_d, rho = io.read_synthetic_model()
+        if x is None:
+            nprism = 0
+            x1 = []
+            x2 = []
+            y1 = []
+            y2 = []
+            z1 = []
+            z2 = []
+            sus = []
+            rem = []
+            rem_i = []
+            rem_d = []
+            rho = []
+            if "m" in data_type:
+                s = 0.001
+                r = 0.0
+            else:
+                s = 0.0
+                r = 100.0
+            while True:
+                results, okButton = dialog(
+                    [
+                        f"Prism {nprism+1}\n\n",
+                        "xmin [m]",
+                        "xmax [m]",
+                        "ymin [m]",
+                        "ymax [m]",
+                        "zmin [m]",
+                        "zmax [m]",
+                        "_________________________________",
+                        "susceptibility [SI]",
+                        "remanence intensity [A/m]",
+                        "remanence declination [°]",
+                        "remanence inclination [°]",
+                        "density [kg/m3]",
+                    ],
+                    ["l", "e", "e", "e", "e", "e", "e", "l", "e", "e", "e", "e", "e"],
+                    ["b", 0.0, 50.0, 0.0, 50.0, 1.0, 5.0, None, s, 0.0, 0.0, 0.0, r],
+                    "Synthetic model",
+                )
+                if not okButton:
+                    if nprism == 0:
+                        print(
+                            "No prism defined, synthetic model calculation " + "aborted"
+                        )
+                        return
+                    break
+                nprism += 1
+                x1.append(float(results[1]))
+                x2.append(float(results[2]))
+                y1.append(float(results[3]))
+                y2.append(float(results[4]))
+                z1.append(float(results[5]))
+                z2.append(float(results[6]))
+                sus.append(float(results[8]))
+                rem.append(float(results[9]))
+                rem_i.append(float(results[10]))
+                rem_d.append(float(results[11]))
+                rho.append(float(results[12]))
+            x = np.zeros((len(x1), 2))
+            x[:, 0] = np.array(x1)
+            x[:, 1] = np.array(x2)
+            y = np.zeros((len(x1), 2))
+            y[:, 0] = np.array(y1)
+            y[:, 1] = np.array(y2)
+            z = np.zeros((len(x1), 2))
+            z[:, 0] = np.array(z1)
+            z[:, 1] = np.array(z2)
+            sus = np.array(sus)
+            rem = np.array(rem)
+            rem_i = np.array(rem_i)
+            rem_d = np.array(rem_d)
+            rho = np.array(rho)
+            with open("synthetic_model.txt", "w") as fo:
+                for i, s in enumerate(sus):
+                    fo.write(
+                        f"{x[i, 0]} {x[i, 1]} {y[i, 0]} {y[i, 1]} "
+                        + f"{z[i, 0]} {z[i, 1]} {s} {rem[i]} {rem_i[i]} "
+                        + f"{rem_d[i]} {rho[i]}\n"
+                    )
+        nprism = len(sus)
+        xmin = self.data.xmin
+        xmax = self.data.xmax
+        ymin = self.data.ymin
+        ymax = self.data.ymax
+        dx = np.round((xmax - xmin) / 50.0, 0)
+        dy = np.round((ymax - ymin) / 50.0, 0)
+        labels = [
+            "xmin [m]",
+            "xmax [m]",
+            "dx [m]",
+            "__________________",
+            "ymin [m]",
+            "ymax [m]",
+            "dy [m]",
+        ]
+        types = ["e", "e", "e", "l", "e", "e", "e"]
+        values = [xmin, xmax, dx, None, ymin, ymax, dy]
+        if "m" in data_type:
+            labels += [
+                "__________________\nif height2==height1 or"
+                + "height2==None:\n   only 1 sensor",
+                "height sensor 1",
+                "height sensor 2",
+            ]
+            types += ["l", "e", "e"]
+            values += [None, 0.0, 0.0]
+        results, okButton = dialog(labels, types, values, "Calculation points")
+        if not okButton:
+            print("Calculation of synthetic model aborted")
+            return
+        xmin = float(results[0])
+        xmax = float(results[1])
+        dx = float(results[2])
+        ymin = float(results[4])
+        ymax = float(results[5])
+        dy = float(results[6])
+        if len(labels) > 7:
+            height1 = float(results[8])
+            if results[9].lower() == "none":
+                height2 = height1
+            else:
+                height2 = float(results[9])
+        earth = deepcopy(self.earth)
+        earth.dec -= self.data.data["line_declination"]
+        xx = np.arange(xmin, xmax + dx / 2.0, dx)
+        yy = np.arange(ymin, ymax + dy / 2.0, dy)
+        xd, yd = np.meshgrid(xx, yy)
+        d_shape = xd.shape
+        ndat1 = d_shape[0] * d_shape[1]
+        xdat = []
+        ydat = []
+        zdat = []
+        data = []
+        xdat.append(xd)
+        ydat.append(yd)
+        zdat.append(np.ones_like(xd) * height1)
+        data.append(np.zeros_like(xd))
+        if height2 != height1:
+            data.append(np.zeros_like(xd))
+            xdat.append(xd)
+            ydat.append(yd)
+            zdat.append(np.ones_like(xd) * height2)
+        self.sPrism = PP(earth)
+        for i in range(nprism):
+            self.sPrism.add_prism(
+                x[i], y[i], z[i], sus[i], rem[i], rem_i[i], rem_d[i], rho[i]
+            )
+        inv = inversion(data, xdat, ydat, zdat, earth=earth, data_type=data_type)
+        inv.mPrism = self.sPrism
+        inv.params = np.zeros(nprism + 1)
+        if "m" in data_type:
+            if abs(sus).max() > 0.0:
+                inv.sus_inv = True
+                inv.params[:nprism] = sus
+            if abs(rem).max() > 0.0:
+                inv.rem_inv = True
+                inv.params[:nprism] = rem
+        else:
+            inv.rho_inv = True
+            inv.params[:nprism] = rho
+            inv.params
+        inv.max_iter = 0
+        if height1 != height2:
+            inv.x = np.concatenate((xdat[0].flatten(), xdat[1].flatten()))
+            inv.y = np.concatenate((ydat[0].flatten(), ydat[1].flatten()))
+            inv.z = np.concatenate((zdat[0].flatten(), zdat[1].flatten()))
+            inv.data = np.zeros_like(inv.x)
+        inv.run_inversion()
+        dat = io.Data(0)
+        if height1 == height2:
+            dat.store_gxf(
+                "synthetic_data.gxf", inv.data_mod.reshape(d_shape), xmin, ymin, dx, dy
+            )
+        else:
+            data1 = inv.data_mod[:ndat1].reshape(d_shape)
+            data2 = inv.data_mod[ndat1:].reshape(d_shape)
+            dat.write_dat("synthetic_data.dat", data1, xx, yy, data2=data2)
+            with open("synthetic_data.config", "w") as fo:
+                fo.write(f"{data_type}\n")
+                fo.write("synthetic model\n")
+                fo.write(f'{self.dat[-1].data["line_declination"]}\n')
+                fo.write(f"{height1}\n")
+                fo.write(f"{height2}\n")
+                fo.write("0\n")
+                fo.write(f"{self.earth.f}\n")
+                fo.write(f"{self.earth.inc}\n")
+                dec = self.earth.dec
+                fo.write(f'{dec+self.dat[-1].data["line_declination"]}\n')
+        inv.show_synthetic()
 
     def Handler(self, signal_received, frame):
         """
@@ -3683,7 +2008,8 @@ class Main(QtWidgets.QWidget):
 
     def save_lineaments(self):
         """
-        If lineaments were picked, save the information into file lineaments.dat
+        If lineaments were picked, save the information into file
+        lineaments.dat
 
         The file has the format:
         #key (including the character #)
@@ -3714,11 +2040,11 @@ class Main(QtWidgets.QWidget):
         Finishes application:
 
         Stores picks into file pick.dat
-        Stores information concerning possibly modified traces (muted or sign-inversed)
+        Stores information concerning possibly modified traces
+        (muted or sign-inversed)
         Deletes unneeded folder if tomography was calculated
         Closes window
         """
-        #        import os
         choice = QtWidgets.QMessageBox.question(
             None,
             "Confirm",
@@ -3726,38 +2052,10 @@ class Main(QtWidgets.QWidget):
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
         )
         if choice == QtWidgets.QMessageBox.Yes:
-            # if max(self.traces.amplitudes) != self.window.general_sign:
-            #     if os.path.exists("receivers_modify.dat"):
-            #         os.remove("receivers_modify.dat")
-            #     with open("receivers_modify.dat","w") as fh:
-            #         for i in range(self.traces.number_of_traces):
-            #             if self.traces.amplitudes[i] != self.window.general_sign:
-            #                 a = self.traces.amplitudes[i]*\
-            #                     self.window.general_sign
-            #                 rec = self.traces.receiver[i]
-            #                 fh.write(f"{rec} {a:0.0f}\n")
-            print("\nApplication finished.\n\n"+\
-                  "Close console if you are working with Spyder")
-            # if self.utilities.w_tau:
-            #     self.utilities.w_tau.close()
-            # if self.utilities.w_env:
-            #     self.utilities.w_env.close()
-            # if self.utilities.w_tomo:
-            #     self.utilities.w_tomo.close()
-            # if self.utilities.w_fcol:
-            #     self.utilities.w_fcol.close()
-            # if self.utilities.w_amp:
-            #     self.utilities.w_amp.close()
-            # if self.window.w_anim:
-            #     self.window.w_anim.close()
-            # if self.window.w_picks:
-            #     self.window.w_picks.close()
-            # if np.amax(self.traces.npick) > 0:
-            #     self.traces.storePicks()
-            # try:
-            #     os.rmdir(self.utilities.path)
-            # except:
-            #     pass
+            print(
+                "\nApplication finished.\n\n"
+                + "Close console if you are working with Spyder"
+            )
             self.w.close()
             QtWidgets.QApplication.quit()
             return True

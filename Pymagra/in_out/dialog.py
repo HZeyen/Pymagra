@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jul  6 22:42:58 2024
+Last mofified on Nov 22, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@gmail.com>
          Université Paris-Saclay
@@ -56,9 +56,9 @@ def dialog(labels, types, values, title="Title"):
 
         - For radiobuttons, the returned value indicates the number of the
           active button (counting starts at zero).
-        - For checkboxes, the returned value is -1 if the box was not checked or
-          gives the order in which the box was checked (starting at zero for the
-          first box having been checked).
+        - For checkboxes, the returned value is -1 if the box was not checked
+         or gives the order in which the box was checked (starting at zero for
+         the first box having been checked).
 
     Dbutton: bool
         If True, "Apply" button has been pressed to finish dialog, if False
@@ -98,7 +98,6 @@ def dialog(labels, types, values, title="Title"):
     return results, D.Dbutton
 
 
-# class Dialog(QtWidgets.QWidget):
 class Dialog(QtWidgets.QDialog):
     """
     Created on Tue Sep 13 12:50:26 2022
@@ -112,8 +111,8 @@ class Dialog(QtWidgets.QDialog):
         labels explaining the different fields. For a series of radiobuttons or
         combobax, labels[i] is itself a list.
     types (list,string)
-        In the order of "labels", indicates the type of field the label belongs to.
-        If labels[i] is itself a list, it is considered as one single label.
+        In the order of "labels", indicates the type of field the label belongs
+        to. If labels[i] is itself a list, it is considered as one single label
 
         String may be:
 
@@ -126,7 +125,8 @@ class Dialog(QtWidgets.QDialog):
         May be capital or not
     values (list, string, float or int); Optional, default value: None
         - Initial values for LineEdit fields;
-        - For Radiobuttons: number of button activated by default (natural counting);
+        - For Radiobuttons: number of button activated by default (natural
+          counting);
         - for labels, it may be "b" (bold), "i" (italic), or anything else
           (usually None) for standard text.
         - Ignored for checkbox and combobox.
@@ -225,6 +225,10 @@ class Dialog(QtWidgets.QDialog):
                 self.ckb[i].setText(lab)
                 self.mainLayout.addWidget(self.ckb[i], il, 0, 1, 2)
                 self.ckb[i].stateChanged.connect(self.checked)
+                if values[i]:
+                    self.ckb[i].setChecked(True)
+                    self.ckState[i] = True
+                    self.ck_order[i] = max(self.ck_order) + 1
                 ilin += 1
             elif types[i].lower() == "b":
                 self.dlabels.append(None)
@@ -276,12 +280,10 @@ class Dialog(QtWidgets.QDialog):
         None.
 
         """
-        #        cols = [" (red)", " (green)", " (blue)"]
         # If a nex box is checked, search the one which has been checked
+        # If self.ckb has None value, the corresponding entry is not a checkbox
         if checked == Qt.Checked:
-            # Else do necessary changes
             for i, ck in enumerate(self.ckb):
-                # If self.ckb has None value, the corresponding entry is not a checkbox
                 if not ck:
                     continue
                 # If self.ckb.checkState is checked after click, set ckState to True and do
@@ -303,9 +305,9 @@ class Dialog(QtWidgets.QDialog):
                 else:
                     self.ckState[i] = False
         # If click has unchecked a checkbox, do necessary changes
+        # If self.ckb has None value, the corresponding entry is not a checkbox
         else:
             for i, ck in enumerate(self.ckb):
-                # If self.ckb has None value, the corresponding entry is not a checkbox
                 if not ck:
                     continue
                 # If self.ckb.checkState is still checked, set ckState to True
@@ -348,7 +350,8 @@ class Dialog(QtWidgets.QDialog):
 
     def on_CancelButton_clicked(self):
         """
-        If Cancel button has been clicked, close Dialogue and set Dbutton to False.
+        If Cancel button has been clicked, close Dialogue and set Dbutton to
+        False.
         """
         self.Dfinish = True
         self.Dbutton = False

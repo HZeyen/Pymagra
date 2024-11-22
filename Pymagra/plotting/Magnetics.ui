@@ -47,6 +47,7 @@
     <addaction name="addData"/>
     <addaction name="saveSTN"/>
     <addaction name="saveDat"/>
+    <addaction name="saveGXF"/>
     <addaction name="separator"/>
     <addaction name="readBase"/>
     <addaction name="save_base"/>
@@ -62,6 +63,8 @@
     </property>
     <addaction name="originalPlot"/>
     <addaction name="actualPlot"/>
+    <addaction name="change_file"/>
+    <addaction name="join"/>
     <addaction name="separator"/>
     <addaction name="plotLine"/>
     <addaction name="basePlot"/>
@@ -70,6 +73,7 @@
     <addaction name="plotGeo"/>
     <addaction name="plotGrid"/>
     <addaction name="plotLineaments"/>
+    <addaction name="fill"/>
     <addaction name="separator"/>
     <addaction name="zoom"/>
     <addaction name="zoom_Out"/>
@@ -84,12 +88,12 @@
      <string>Utilities</string>
     </property>
     <addaction name="originalData"/>
-    <addaction name="diurnalCorrection"/>
     <addaction name="cleanData"/>
+    <addaction name="timeCorrect"/>
+    <addaction name="diurnalCorrection"/>
     <addaction name="medianJustify"/>
     <addaction name="gaussJustify"/>
     <addaction name="interpolate"/>
-    <addaction name="fill"/>
     <addaction name="poleReduction"/>
     <addaction name="prolongation"/>
     <addaction name="tiltAngle"/>
@@ -97,9 +101,18 @@
     <addaction name="lineFFT"/>
     <addaction name="Spector_2D"/>
    </widget>
+   <widget class="QMenu" name="Inversion">
+    <property name="title">
+     <string>Inversion</string>
+    </property>
+    <addaction name="inv2D"/>
+    <addaction name="inv3D"/>
+    <addaction name="synthetic"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="plotMenu"/>
    <addaction name="Utilities"/>
+   <addaction name="Inversion"/>
   </widget>
   <action name="actionPlot">
    <property name="text">
@@ -114,12 +127,12 @@
     <string>Plot treated data</string>
    </property>
    <property name="shortcut">
-    <string>D</string>
+    <string>T</string>
    </property>
   </action>
   <action name="addData">
    <property name="text">
-    <string>Choose additional data files</string>
+    <string>Get additional data files</string>
    </property>
    <property name="shortcut">
     <string>Shift+D</string>
@@ -596,11 +609,14 @@
    </property>
   </action>
   <action name="fill">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Fill rectangle</string>
+    <string>Plot filled rectangle</string>
    </property>
    <property name="toolTip">
     <string>Fill nans by extrapolation with inverse squarde distance weighting</string>
@@ -862,7 +878,7 @@
     <string>Plot geography information</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+G</string>
+    <string>Alt+G</string>
    </property>
   </action>
   <action name="plotGrid">
@@ -905,6 +921,85 @@
    </property>
    <property name="shortcut">
     <string>Alt+F</string>
+   </property>
+  </action>
+  <action name="change_file">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Change data file</string>
+   </property>
+   <property name="shortcut">
+    <string>D</string>
+   </property>
+  </action>
+  <action name="join">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Join data sets</string>
+   </property>
+   <property name="shortcut">
+    <string>J</string>
+   </property>
+  </action>
+  <action name="adjust">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Adjust block differences</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="inv2D">
+   <property name="text">
+    <string>2.5D inversion</string>
+   </property>
+   <property name="shortcut">
+    <string>I</string>
+   </property>
+  </action>
+  <action name="inv3D">
+   <property name="text">
+    <string>3D inversion</string>
+   </property>
+   <property name="shortcut">
+    <string>3</string>
+   </property>
+  </action>
+  <action name="timeCorrect">
+   <property name="text">
+    <string>Correct time</string>
+   </property>
+   <property name="toolTip">
+    <string>Correct time of magnetometer data. The day may be easily corrected with e text editor. Here, only the hour/minute/second is corrected</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+C</string>
+   </property>
+  </action>
+  <action name="synthetic">
+   <property name="text">
+    <string>Synthetic model</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+S</string>
+   </property>
+  </action>
+  <action name="saveGXF">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save .GXF format</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+X</string>
    </property>
   </action>
  </widget>
