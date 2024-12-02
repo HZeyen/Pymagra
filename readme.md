@@ -15,7 +15,7 @@ Once installed, open an Anaconda Powershell window, cd to the folder containing 
 
 This may be done also from any other command window (cmd under Windows) if the folder containing the executable is placed in the Path. In Windows, this path is C:\User\user_name\anaconda3\Skripts.
 
-You may also open file pymagra_start.py (in C:\User\user_name\anaconda3\Lib\ site-packages\Pymagra) in a GUI like Spyder and run it from there. This gives the user the possibility to define a working directory at the beginning of pymagra (near line 18, search: “dir0 =” and change the given path), especially useful if you a working for several days with data in the same folder. If using Spyder, it is recommended to run the program within its own console: “Run -> Configuration per file -> Run with custom configuration -> Execute in dedicated console”.
+You may also open file pymagra_start.py (in C:\User\user_name\anaconda3\Lib\ site-packages\Pymagra) in a GUI like Spyder and run it from there. This gives the user the possibility to define a working directory at the beginning of pymagra_start.py (near line 18, search: “dir0 =” and change the given path), especially useful if you a working for several days with data in the same folder. If using Spyder, it is recommended to run the program within its own console: “Run -> Configuration per file -> Run with custom configuration -> Execute in dedicated console”.
 
 Read the **[manual](./docs/pymagra_Manual.pdf)** for installation, menu description and including a short tutorial.
 
