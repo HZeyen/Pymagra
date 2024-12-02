@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Last modified Nov 21, 2024
+Last modified Dec 02, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
          University Paris-Saclay, France
@@ -31,10 +31,10 @@ class DataContainer:
     Contains the following methods:
        - __init__
        - set_values : set certain attributes defined outside the class
-       - read_geometrics : Read data from Geometrics *.stn format file
+       - read_geometrics : Read data from Geometrics .stn format file
        - correct_time : Correct measurement times
-       - write_geometrics : Write data into Geometrics *.stn format file
-       - write_dat : Write data into Geometrics *.dat (Surfer) format file
+       - write_geometrics : Write data into Geometrics .stn format file
+       - write_dat : Write data into Geometrics .dat (Surfer) format file
        - read_txt : Read data from simple text file
        - read_gxf : Read gridded data from gxf format file
        - store_gxf : Store gridded data into gxf format file
@@ -43,7 +43,7 @@ class DataContainer:
        - lines : Transform data from class Geometrics to class DataContainer
        - read_base : Read data from a Geometrics base station file
        - base_ini : InitializeGeometrics class instance for base station data
-       - write_base : Write base station data into Geometrics *.stn file
+       - write_base : Write base station data into Geometrics .stn file
        - interpol : Interpolate data onto a regular grid (convex area)
        - nan_fill : Extrapolate data onto full rectangular grid
        - clean : Mute (set to nan) data outside user-defined limits
@@ -171,7 +171,7 @@ class DataContainer:
         d_sensor : float, optional; default: None
             Distance between sensors (h_sensor - h2_sensor)
         dispo : int, optional; default: None
-            if 0: Vertical disposition of sensors, if 1: horizontal disposition
+            If 0: Vertical disposition of sensors, if 1: horizontal disposition
         block : int, optional; default: None
             Number of block (file, data set)
         block_name : str, optional; default: None
@@ -179,24 +179,26 @@ class DataContainer:
         typ : str, optional; default: None
             Data type, may be "magnetic" or "gravity"
         inter_flag : bool, optional; default: None
-            if True, data are interpolated onto a regular grid, else: original
+            If True, data are interpolated onto a regular grid, else: original
             data.
         treatments : dict, optional; default: None
             Dictionary with booleans indicating the treatments having been
-            effectuated. Contins the following items:
-                "diurnal" (correction of diurnal variations)
-                "clip" (Data were clipped)
-                "justify_median" (directional effects were reduced adjusting
-                                  medians)
-                "justify_Gauss" (directional effects were reduced adjusting
-                                 Gaussian statistics)
-                "interpol" (Date were interpolated onto a regular grid)
-                "nan_fill" (Nans in big holes or in corners were filled by
-                            extrapolation)
-                "pole"] (Magnetic data were reduced to pole)
-                "odd lines" (only odd lines are chosen)
-                "even lines" (only even lines are chosen)
-                "up" (data were up-or downward continued)
+            effectuated. Contains the following items:
+
+            - "diurnal" (correction of diurnal variations)
+            - "clip" (Data were clipped)
+            - "justify_median" (directional effects were reduced adjusting
+              medians)
+            - "justify_Gauss" (directional effects were reduced adjusting
+              Gaussian statistics)
+            - "interpol" (Date were interpolated onto a regular grid)
+            - "nan_fill" (Nans in big holes or in corners were filled by
+              extrapolation)
+            - "pole" (Magnetic data were reduced to pole)
+            - "odd lines" (only odd lines are chosen)
+            - "even lines" (only even lines are chosen)
+            - "up" (data were up-or downward continued)
+
         fconfig : str, optional; default: None
             File with configuration information
         file : str, optional; default: None
@@ -384,7 +386,7 @@ class DataContainer:
         Correct time of recording in case there was a timing problem with the
         instrument.
 
-        Parameters:
+        Parameters
         ----------
         dt : float, optional. Default: None
             Time to be added to instrument time in seconds.
@@ -413,7 +415,7 @@ class DataContainer:
     def prepare_gdata(self, original_fill=False):
         """
         Copies actual (usually modified or non-Geometrics) data into class
-        Geometrics for creation of a *.stn or *.dat geometrics file
+        Geometrics for creation of a .stn or .dat geometrics file
 
         Parameters
         ----------
@@ -1737,7 +1739,7 @@ class DataContainer:
 
         Parameters are given interactively
 
-        Returns :
+        Returns
         -------
         dz : float
             Distance by which to continue filed (positive = upward)
@@ -2083,6 +2085,7 @@ class DataContainer:
             if event.name == "key_press_event":
                 if event.key == "enter":
                     self.fig_line.close()
+                    del self.fig_line
                     return pos, pos_line, s1, s2, direction
                 if event.key == "right":
                     next_flag = 1
@@ -2138,7 +2141,7 @@ class DataContainer:
                                 i2 = i1 + len(self.data[line]["x"])
                                 self.data[line]["s2"] = np.copy(s2_new[i1:i2])
                                 i1 = i2
-                    continue
+                    self.fig_line.close()
                 else:
                     continue
 # Click was outside axes
@@ -2168,3 +2171,4 @@ class DataContainer:
                 else:
                     ym = line_positions[lin]
             self.fig_line.close()
+            del self.fig_line
