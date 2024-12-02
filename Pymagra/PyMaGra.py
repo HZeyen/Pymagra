@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-last modified on Nov 21, 2024
+last modified on Dec 02, 2024
 
 @author: Hermann Zeyen <hermann.zeyen@universite-paris-saclay.fr>
          University Paris-Saclay, France
@@ -476,8 +476,8 @@ class Main(QtWidgets.QWidget):
                 self.w.timeCorrect.setEnabled(False)
             self.dat_ori.append(deepcopy(self.dat[-1]))
             self.check_data(self.dat[-1].data, f)
-            # If data are magnetic, no configuration file exits and Earth's field
-            #   properties were not yet read, ask now for these properties
+# If data are magnetic, no configuration file exits and Earth's field
+#   properties were not yet read, ask now for these properties
             line_dir = self.dat[-1].data["line_declination"]
             if "m" in self.data_types[i]:
                 if not self.field_flag and not self.config_flag:
@@ -486,12 +486,12 @@ class Main(QtWidgets.QWidget):
                     self.declination = self.earth.dec
                     self.strength = self.earth.f
                     self.field_flag = True
-                # If a configuration file exists but Earth's field properties were not yet
-                #   defined, create earthMag calss and store the field data.
+# If a configuration file exists but Earth's field properties were not yet
+#   defined, create earthMag calss and store the field data.
                 elif not self.field_flag:
                     self.earth = io.get_mag_field(
-                        line_dir, self.strength, self.inclination, self.declination
-                    )
+                        line_dir, self.strength, self.inclination,
+                        self.declination)
                     self.field_flag = True
             else:
                 self.earth = io.get_mag_field(line_dir, 0.0, 0.0, 0.0)
@@ -499,8 +499,8 @@ class Main(QtWidgets.QWidget):
             self.declination_ori = self.declination
             self.earth_ori = deepcopy(self.earth)
             self.dat[-1].set_values(earth=self.earth)
-            # If the configuration file did not yet exist, create it now with the data
-            #   read in via the dialog boxes
+# If the configuration file did not yet exist, create it now with the data
+#   read in via the dialog boxes
             if not self.config_flag:
                 with open(fconfig, "w") as fo:
                     fo.write(f"{self.data_types[i]}\n")
@@ -509,7 +509,8 @@ class Main(QtWidgets.QWidget):
                     fo.write(f'{self.dat[-1].data["height"]}\n')
                     if self.dat[-1].data["grad_data"]:
                         self.height2 = self.dat[-1].data["height2"]
-                        self.dist_sensors = self.dat[-1].data["height"] - self.height2
+                        self.dist_sensors = self.dat[-1].data["height"] -\
+                            self.height2
                     else:
                         self.height2 = self.dat[-1].data["height"]
                         self.dist_sensors = 0.0
@@ -530,7 +531,7 @@ class Main(QtWidgets.QWidget):
             if isinstance(k, (str)):
                 break
         self.string_keys = len(data_keys) - i
-        # Plot data from active file
+# Plot data from active file
         if ld > 0:
             self.plotActual()
 
@@ -581,25 +582,17 @@ class Main(QtWidgets.QWidget):
         if err_flag:
             if grad_test:
                 _ = QtWidgets.QMessageBox.warning(
-                    None,
-                    "Warning",
-                    f"File {file}:\n\n"
+                    None, "Warning", f"File {file}:\n\n"
                     + f"Sensor 1: min: {vmin1:0.2f}, max: {vmax1:0.2f}"
                     + f"\nSensor 2: min: {vmin2:0.2f}, max: {vmax2:0.2f}"
                     + "\n\nConsider cleaning up data as first step.",
-                    QtWidgets.QMessageBox.Close,
-                    QtWidgets.QMessageBox.Close,
-                )
+                    QtWidgets.QMessageBox.Close, QtWidgets.QMessageBox.Close)
             else:
                 _ = QtWidgets.QMessageBox.warning(
-                    None,
-                    "Warning",
-                    f"File {file}:\n\n"
+                    None, "Warning", f"File {file}:\n\n"
                     + f"Data: min: {vmin1:0.2f}, max: {vmax1:0.2f}"
                     + "\n\nConsider cleaning up data as first step.",
-                    QtWidgets.QMessageBox.Close,
-                    QtWidgets.QMessageBox.Close,
-                )
+                    QtWidgets.QMessageBox.Close, QtWidgets.QMessageBox.Close)
 
     def correct_time(self, dt=None):
         """
@@ -657,7 +650,7 @@ class Main(QtWidgets.QWidget):
 
     def join_data(self):
         """
-        Joins al available data sets into one common data set
+        Joins all available data sets into one common data set
 
         All data must have the same data type (magnetic vs gravity) and be
         located in the same coordinate system. If the different data blocks are
@@ -696,21 +689,17 @@ class Main(QtWidgets.QWidget):
         for i, d in enumerate(self.dat[1:-1]):
             if d.treatments != self.treatments:
                 _ = QtWidgets.QMessageBox.warning(
-                    None,
-                    "Warning",
-                    f"Data set {d.data['block']}:\n\n"
+                    None, "Warning", f"Data set {d.data['block']}:\n\n"
                     + "Data treatments are not the same as in other blocks\n\n"
                     + "All blocks must have been treated in the same way "
                     + "before joining\n\nJoin data sets is aborted",
-                    QtWidgets.QMessageBox.Close,
-                    QtWidgets.QMessageBox.Close,
-                )
+                    QtWidgets.QMessageBox.Close, QtWidgets.QMessageBox.Close)
                 self.n_blocks -= 1
                 del self.dat[-1]
                 return
             if i == nbk:
                 break
-            # Skip already joint data sets (they contain the character "+" in their name)
+# Skip already joint data sets (they contain the character "+" in their name)
             if "+" in d.data["block_name"]:
                 continue
             blkn = f"{blkn}+{d.data['block']}"
@@ -732,50 +721,53 @@ class Main(QtWidgets.QWidget):
                         break
                 if add_flag:
                     self.dat[-1].data[il]["x"] = np.concatenate(
-                        (self.dat[-1].data[il]["x"], val["x"])
-                    )
+                        (self.dat[-1].data[il]["x"], val["x"]))
                     self.dat[-1].data[il]["y"] = np.concatenate(
-                        (self.dat[-1].data[il]["y"], val["y"])
-                    )
+                        (self.dat[-1].data[il]["y"], val["y"]))
                     if val["direction"] in ("N", "S", 0.0, 180.0):
                         index = np.argsort(self.dat[-1].data[il]["y"])
                     else:
                         index = np.argsort(self.dat[-1].data[il]["x"])
-                    self.dat[-1].data[il]["x"] = self.dat[-1].data[il]["x"][index]
-                    self.dat[-1].data[il]["y"] = self.dat[-1].data[il]["y"][index]
+                    self.dat[-1].data[il]["x"] =\
+                        self.dat[-1].data[il]["x"][index]
+                    self.dat[-1].data[il]["y"] =\
+                        self.dat[-1].data[il]["y"][index]
                     self.dat[-1].data[il]["z"] = np.concatenate(
-                        (self.dat[-1].data[il]["z"], val["z"])
-                    )[index]
+                        (self.dat[-1].data[il]["z"], val["z"]))[index]
                     self.dat[-1].data[il]["s1"] = np.concatenate(
-                        (self.dat[-1].data[il]["s1"], val["s1"])
-                    )[index]
+                        (self.dat[-1].data[il]["s1"], val["s1"]))[index]
                     self.dat[-1].data[il]["s2"] = np.concatenate(
-                        (self.dat[-1].data[il]["s2"], val["s2"])
-                    )[index]
+                        (self.dat[-1].data[il]["s2"], val["s2"]))[index]
                     self.dat[-1].data[il]["time"] = np.concatenate(
-                        (self.dat[-1].data[il]["time"], val["time"])
-                    )[index]
-                    if self.dat[-1].data[il]["direction"] in ("N", "S", 0.0, 180.0):
+                        (self.dat[-1].data[il]["time"], val["time"]))[index]
+                    if self.dat[-1].data[il]["direction"] in ("N", "S", 0.0,
+                                                              180.0):
                         _, index = np.unique(
-                            self.dat[-1].data[il]["y"], return_index=True
-                        )
+                            self.dat[-1].data[il]["y"], return_index=True)
                     else:
                         _, index = np.unique(
-                            self.dat[-1].data[il]["x"], return_index=True
-                        )
-                    self.dat[-1].data[il]["x"] = self.dat[-1].data[il]["x"][index]
-                    self.dat[-1].data[il]["y"] = self.dat[-1].data[il]["y"][index]
-                    self.dat[-1].data[il]["z"] = self.dat[-1].data[il]["z"][index]
-                    self.dat[-1].data[il]["s1"] = self.dat[-1].data[il]["s1"][index]
-                    self.dat[-1].data[il]["s2"] = self.dat[-1].data[il]["s2"][index]
-                    self.dat[-1].data[il]["time"] = self.dat[-1].data[il]["time"][index]
+                            self.dat[-1].data[il]["x"], return_index=True)
+                    self.dat[-1].data[il]["x"] =\
+                        self.dat[-1].data[il]["x"][index]
+                    self.dat[-1].data[il]["y"] =\
+                        self.dat[-1].data[il]["y"][index]
+                    self.dat[-1].data[il]["z"] =\
+                        self.dat[-1].data[il]["z"][index]
+                    self.dat[-1].data[il]["s1"] =\
+                        self.dat[-1].data[il]["s1"][index]
+                    self.dat[-1].data[il]["s2"] =\
+                        self.dat[-1].data[il]["s2"][index]
+                    self.dat[-1].data[il]["time"] =\
+                        self.dat[-1].data[il]["time"][index]
                 else:
                     self.dat[-1].data[nlines] = deepcopy(val)
                     nlines += 1
                     pos_lines.append(pos_line)
 
-            self.dat[-1].sensor1 = np.concatenate((self.dat[-1].sensor1, d.sensor1))
-            self.dat[-1].sensor2 = np.concatenate((self.dat[-1].sensor2, d.sensor2))
+            self.dat[-1].sensor1 = np.concatenate((self.dat[-1].sensor1,
+                                                   d.sensor1))
+            self.dat[-1].sensor2 = np.concatenate((self.dat[-1].sensor2,
+                                                   d.sensor2))
             self.dat[-1].x = np.concatenate((self.dat[-1].x, d.x))
             self.dat[-1].y = np.concatenate((self.dat[-1].y, d.y))
             self.dat[-1].z = np.concatenate((self.dat[-1].z, d.z))
@@ -796,7 +788,8 @@ class Main(QtWidgets.QWidget):
         self.dat[-1].data["grad_data"] = self.dat[0].data["grad_data"]
         self.dat[-1].data["year"] = self.dat[0].data["year"]
         self.dat[-1].data["height"] = self.dat[0].data["height"]
-        self.dat[-1].data["line_declination"] = self.dat[0].data["line_declination"]
+        self.dat[-1].data["line_declination"] =\
+            self.dat[0].data["line_declination"]
         if self.dat[-1].data["grad_data"]:
             self.dat[-1].data["height2"] = self.dat[0].data["height2"]
             self.dat[-1].data["d_sensor"] = self.dat[0].data["d_sensor"]
@@ -880,9 +873,8 @@ class Main(QtWidgets.QWidget):
         self.dat[-1].y_inter = np.copy(self.y_inter)
         self.dat[-1].sensor1_inter = np.copy(self.sensor1_inter)
         if self.dat[-1].data["grad_data"]:
-            self.grad_inter = (self.sensor2_inter - self.sensor1_inter) / self.dat[
-                -1
-            ].data["d_sensor"]
+            self.grad_inter = (self.sensor2_inter - self.sensor1_inter) /\
+                self.dat[-1].data["d_sensor"]
             self.dat[-1].sensor2_inter = np.copy(self.sensor2_inter)
             self.dat[-1].grad_inter = np.copy(self.grad_inter)
         self.dat[-1].inter_flag = True
@@ -1107,8 +1099,7 @@ class Main(QtWidgets.QWidget):
         self.earth.earth_components()
         self.height = self.h_sensor + self.d_sensor
         self.data.set_values(
-            earth=self.earth, treatments=self.treatments, inter_flag=False
-        )
+            earth=self.earth, treatments=self.treatments, inter_flag=False)
         self.plotActual()
 
     def plotOriginal(self):
@@ -1122,18 +1113,10 @@ class Main(QtWidgets.QWidget):
         """
         data = self.dat_ori[self.actual_plotted_file].data
         self.fig, self.ax = self.w.plot_triang(
-            data,
-            title=f"{self.data.data['title']}, ",
-            percent=self.percent,
-            mincol1=self.mincol1,
-            maxcol1=self.maxcol1,
-            mincol2=self.mincol2,
-            maxcol2=self.maxcol2,
-            mincolg=self.mincolg,
-            maxcolg=self.maxcolg,
-            grad_flag=self.gradient_flag,
-            c=self.color,
-        )
+            data, title=f"{self.data.data['title']}, ", percent=self.percent,
+            mincol1=self.mincol1, maxcol1=self.maxcol1, mincol2=self.mincol2,
+            maxcol2=self.maxcol2, mincolg=self.mincolg, maxcolg=self.maxcolg,
+            grad_flag=self.gradient_flag, c=self.color)
 
     def plotActual(self):
         """
@@ -1159,19 +1142,12 @@ class Main(QtWidgets.QWidget):
                 title = title[:-1]
 
             self.fig, self.ax = self.w.plot_image(
-                self.data,
-                title=title,
-                percent=self.percent,
-                mincol1=self.mincol1,
-                maxcol1=self.maxcol1,
-                mincol2=self.mincol2,
-                maxcol2=self.maxcol2,
-                mincolg=self.mincolg,
-                maxcolg=self.maxcolg,
-                grad_flag=self.gradient_flag,
-                c=self.color,
-                dec=self.data.line_declination,
-            )
+                self.data, title=title, percent=self.percent,
+                mincol1=self.mincol1, maxcol1=self.maxcol1,
+                mincol2=self.mincol2, maxcol2=self.maxcol2,
+                mincolg=self.mincolg, maxcolg=self.maxcolg,
+                grad_flag=self.gradient_flag, c=self.color,
+                dec=self.data.line_declination)
         else:
             for t in self.data.treatments.items():
                 if t[0] in ("interpol", "nan_fill", "pole", "up"):
@@ -1183,18 +1159,11 @@ class Main(QtWidgets.QWidget):
             if title[-1] == ",":
                 title = title[:-1]
             self.fig, self.ax = self.w.plot_triang(
-                self.data,
-                title=title,
-                percent=self.percent,
-                mincol1=self.mincol1,
-                maxcol1=self.maxcol1,
-                mincol2=self.mincol2,
-                maxcol2=self.maxcol2,
-                mincolg=self.mincolg,
-                maxcolg=self.maxcolg,
-                grad_flag=self.gradient_flag,
-                c=self.color,
-            )
+                self.data, title=title, percent=self.percent,
+                mincol1=self.mincol1, maxcol1=self.maxcol1,
+                mincol2=self.mincol2, maxcol2=self.maxcol2,
+                mincolg=self.mincolg, maxcolg=self.maxcolg,
+                grad_flag=self.gradient_flag, c=self.color)
 
     def plot_gradient(self):
         """
@@ -1308,8 +1277,10 @@ class Main(QtWidgets.QWidget):
         while True:
             event = self.w.get_mouse_click(self.fig)
             if event.name == "button_press_event":
-                break
-        pos, pos_line, s1, s2, direction = self.data.plot_line(plot_flag, event)
+                if event.inaxes:
+                    break
+        pos, pos_line, s1, s2, direction = self.data.plot_line(plot_flag,
+                                                               event)
         self.plotActual()
         return pos, pos_line, s1, s2, direction
 
@@ -1340,41 +1311,21 @@ class Main(QtWidgets.QWidget):
                     "_______________________________",
                     f"Minimum of color scale gradient [{self.unit}/m]",
                     f"Maximum of color scale gradient [{self.unit}/m]",
-                    "Color map",
-                    cols,
-                ],
+                    "Color map", cols,],
                 ["l", "e", "e", "e", "l", "e", "e", "l", "e", "e", "l", "b"],
-                [
-                    None,
-                    self.percent,
-                    self.mincol1,
-                    self.maxcol1,
-                    None,
-                    self.mincol2,
-                    self.maxcol2,
-                    None,
-                    self.mincolg,
-                    self.maxcolg,
-                    0,
-                ],
-                "Color scale limits",
-            )
+                [None, self.percent, self.mincol1, self.maxcol1, None,
+                 self.mincol2, self.maxcol2, None, self.mincolg, self.maxcolg,
+                 0,], "Color scale limits")
         else:
             results, okButton = dialog(
-                [
-                    "If min==max, quantile is used\n"
-                    + "If quantile is also 0, min and max values of arrays\n"
-                    + "If min!=max, these values set the color scale limits",
-                    "Cliping quantile for plotting",
-                    f"Minimum of color scale [{self.unit}]",
-                    f"Maximum of color scale [{self.unit}]",
-                    "Color map",
-                    cols,
-                ],
+                ["If min==max, quantile is used\nIf quantile is also 0, min "
+                 + "and max values of arrays\nIf min!=max, these values set "
+                 + "the color scale limits", "Cliping quantile for plotting",
+                 f"Minimum of color scale [{self.unit}]",
+                 f"Maximum of color scale [{self.unit}]", "Color map", cols],
                 ["l", "e", "e", "e", "l", "b"],
                 [None, self.percent, self.mincol1, self.maxcol1, 0],
-                "Color scale limits",
-            )
+                "Color scale limits")
         if okButton:
             self.percent = float(results[1])
             self.mincol1 = float(results[2])
@@ -1389,11 +1340,9 @@ class Main(QtWidgets.QWidget):
                 self.color = cols[int(results[5])]
             self.plotActual()
         else:
-            print(
-                f"\nClipping quantile left at {self.percent:0.3f}\n"
-                + f"    minimum color: {self.mincol1:0.1f} {self.unit}"
-                + f"    maximum color: {self.maxcol1:0.1f} {self.unit}"
-            )
+            print(f"\nClipping quantile left at {self.percent:0.3f}\n"
+                  + f"    minimum color: {self.mincol1:0.1f} {self.unit}"
+                  + f"    maximum color: {self.maxcol1:0.1f} {self.unit}")
 
     def plotBase(self):
         """
@@ -1464,15 +1413,9 @@ class Main(QtWidgets.QWidget):
             self.base_flag = True
         else:
             results, okButton = dialog(
-                [
-                    "No base station data exist.\nFit polygone to medians or "
-                    + "cancel",
-                    "Degree of polynom",
-                ],
-                ["l", "e"],
-                [None, 5],
-                "Diurnal variation by curve fit",
-            )
+                ["No base station data exist.\nFit polygone to medians or "
+                 + "cancel", "Degree of polynom"], ["l", "e"], [None, 5],
+                "Diurnal variation by curve fit")
             if not okButton:
                 print("\nDiurnal correction not applied")
             deg = int(results[1])
@@ -1480,8 +1423,7 @@ class Main(QtWidgets.QWidget):
             self.base.base_ini()
             self.base_flag = False
         result = u.diurnal_correction(
-            self.data, self.base.base, base_flag=self.base_flag, degree=deg
-        )
+            self.data, self.base.base, base_flag=self.base_flag, degree=deg)
         if result:
             self.treatments["diurnal"] = True
             self.data.set_values(treatments=self.treatments)
@@ -1682,15 +1624,15 @@ class Main(QtWidgets.QWidget):
             z.append(np.ones_like(xx) * self.data.data["height2"])
             data.append(s2)
         inv = inversion(data, x, y, z, earth=earth, data_type=data_type)
-        # Get area of initial prisms and extract data to be inverted
+# Get area of initial prisms and extract data to be inverted
         ret = inv.get_area2D()
         if not ret:
             return
-        # Define inversion parameters
+# Define inversion parameters
         ret = inv.get_inversion_parameters(data_type)
         if not ret:
             return
-        # Set overall data and parameter variances
+# Set overall data and parameter variances
         ret = inv.get_variances()
         if not ret:
             return
@@ -1728,36 +1670,36 @@ class Main(QtWidgets.QWidget):
         """
         earth = deepcopy(self.earth)
         earth.dec -= self.data.data["line_declination"]
-        if self.inter_flag:
+        if self.data.inter_flag:
             data_type = self.data_types[self.actual_plotted_file][0]
             data = []
             x = []
             y = []
             z = []
-            data.append(self.sensor1_inter)
-            xx, yy = np.meshgrid(self.x_inter, self.y_inter)
+            data.append(self.data.sensor1_inter)
+            xx, yy = np.meshgrid(self.data.x_inter, self.data.y_inter)
             x.append(xx)
             y.append(yy)
             z.append(np.ones_like(y) * self.data.data["height"])
-            if self.dat[self.actual_plotted_file].data["grad_data"]:
-                data.append(self.sensor2_inter)
+            if self.data.data["grad_data"]:
+                data.append(self.data.sensor2_inter)
                 x.append(xx)
                 y.append(yy)
                 z.append(np.ones_like(yy) * (self.data.data["height2"]))
             inv = inversion(data, x, y, z, earth=earth, data_type=data_type)
-            # Get area of initial prisms and extract data to be inverted
+# Get area of initial prisms and extract data to be inverted
             ret = inv.get_area3D()
             if not ret:
                 return
-            # Define inversion parameters
+# Define inversion parameters
             ret = inv.get_inversion_parameters(data_type)
             if not ret:
                 return
-            # Set overall data and parameter variances
+# Set overall data and parameter variances
             ret = inv.get_variances()
             if not ret:
                 return
-            # Do inversion
+# Do inversion
             while True:
                 inv.run_inversion()
                 ret = inv.show_results3D()
@@ -1775,14 +1717,11 @@ class Main(QtWidgets.QWidget):
 
         else:
             _ = QtWidgets.QMessageBox.warning(
-                None,
-                "Warning",
+                None, "Warning",
                 "For 3D inversion, data must be interpolated onto a "
                 + "regular grid.\n\nUse Utilities->Interpolate\n"
                 + "and start inversion again",
-                QtWidgets.QMessageBox.Close,
-                QtWidgets.QMessageBox.Close,
-            )
+                QtWidgets.QMessageBox.Close, QtWidgets.QMessageBox.Close)
             return
 
     def synthetic_model(self):
@@ -1820,30 +1759,20 @@ class Main(QtWidgets.QWidget):
                 r = 100.0
             while True:
                 results, okButton = dialog(
-                    [
-                        f"Prism {nprism+1}\n\n",
-                        "xmin [m]",
-                        "xmax [m]",
-                        "ymin [m]",
-                        "ymax [m]",
-                        "zmin [m]",
-                        "zmax [m]",
+                    [f"Prism {nprism+1}\n\n", "xmin [m]", "xmax [m]",
+                     "ymin [m]", "ymax [m]", "zmin [m]", "zmax [m]",
                         "_________________________________",
-                        "susceptibility [SI]",
-                        "remanence intensity [A/m]",
+                        "susceptibility [SI]", "remanence intensity [A/m]",
                         "remanence declination [°]",
-                        "remanence inclination [°]",
-                        "density [kg/m3]",
-                    ],
-                    ["l", "e", "e", "e", "e", "e", "e", "l", "e", "e", "e", "e", "e"],
-                    ["b", 0.0, 50.0, 0.0, 50.0, 1.0, 5.0, None, s, 0.0, 0.0, 0.0, r],
-                    "Synthetic model",
-                )
+                        "remanence inclination [°]", "density [kg/m3]"],
+                    ["l", "e", "e", "e", "e", "e", "e", "l", "e", "e", "e",
+                     "e", "e"],
+                    ["b", 0.0, 50.0, 0.0, 50.0, 1.0, 5.0, None, s, 0.0, 0.0,
+                     0.0, r], "Synthetic model")
                 if not okButton:
                     if nprism == 0:
-                        print(
-                            "No prism defined, synthetic model calculation " + "aborted"
-                        )
+                        print("No prism defined, synthetic model calculation "
+                              + "aborted")
                         return
                     break
                 nprism += 1
@@ -1877,8 +1806,7 @@ class Main(QtWidgets.QWidget):
                     fo.write(
                         f"{x[i, 0]} {x[i, 1]} {y[i, 0]} {y[i, 1]} "
                         + f"{z[i, 0]} {z[i, 1]} {s} {rem[i]} {rem_i[i]} "
-                        + f"{rem_d[i]} {rho[i]}\n"
-                    )
+                        + f"{rem_d[i]} {rho[i]}\n")
         nprism = len(sus)
         xmin = self.data.xmin
         xmax = self.data.xmax
@@ -1886,24 +1814,14 @@ class Main(QtWidgets.QWidget):
         ymax = self.data.ymax
         dx = np.round((xmax - xmin) / 50.0, 0)
         dy = np.round((ymax - ymin) / 50.0, 0)
-        labels = [
-            "xmin [m]",
-            "xmax [m]",
-            "dx [m]",
-            "__________________",
-            "ymin [m]",
-            "ymax [m]",
-            "dy [m]",
-        ]
+        labels = ["xmin [m]", "xmax [m]", "dx [m]", "__________________",
+                  "ymin [m]", "ymax [m]", "dy [m]"]
         types = ["e", "e", "e", "l", "e", "e", "e"]
         values = [xmin, xmax, dx, None, ymin, ymax, dy]
         if "m" in data_type:
-            labels += [
-                "__________________\nif height2==height1 or"
-                + "height2==None:\n   only 1 sensor",
-                "height sensor 1",
-                "height sensor 2",
-            ]
+            labels += ["__________________\nif height2==height1 or"
+                       + "height2==None:\n   only 1 sensor",
+                       "height sensor 1", "height sensor 2"]
             types += ["l", "e", "e"]
             values += [None, 0.0, 0.0]
         results, okButton = dialog(labels, types, values, "Calculation points")
@@ -1945,9 +1863,9 @@ class Main(QtWidgets.QWidget):
         self.sPrism = PP(earth)
         for i in range(nprism):
             self.sPrism.add_prism(
-                x[i], y[i], z[i], sus[i], rem[i], rem_i[i], rem_d[i], rho[i]
-            )
-        inv = inversion(data, xdat, ydat, zdat, earth=earth, data_type=data_type)
+                x[i], y[i], z[i], sus[i], rem[i], rem_i[i], rem_d[i], rho[i])
+        inv = inversion(data, xdat, ydat, zdat, earth=earth,
+                        data_type=data_type)
         inv.mPrism = self.sPrism
         inv.params = np.zeros(nprism + 1)
         if "m" in data_type:
@@ -1970,9 +1888,8 @@ class Main(QtWidgets.QWidget):
         inv.run_inversion()
         dat = io.Data(0)
         if height1 == height2:
-            dat.store_gxf(
-                "synthetic_data.gxf", inv.data_mod.reshape(d_shape), xmin, ymin, dx, dy
-            )
+            dat.store_gxf("synthetic_data.gxf", inv.data_mod.reshape(d_shape),
+                          xmin, ymin, dx, dy)
         else:
             data1 = inv.data_mod[:ndat1].reshape(d_shape)
             data2 = inv.data_mod[ndat1:].reshape(d_shape)
@@ -2046,16 +1963,11 @@ class Main(QtWidgets.QWidget):
         Closes window
         """
         choice = QtWidgets.QMessageBox.question(
-            None,
-            "Confirm",
-            "Are you sure?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-        )
+            None, "Confirm", "Are you sure?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if choice == QtWidgets.QMessageBox.Yes:
-            print(
-                "\nApplication finished.\n\n"
-                + "Close console if you are working with Spyder"
-            )
+            print("\nApplication finished.\n\n"
+                  + "Close console if you are working with Spyder")
             self.w.close()
             QtWidgets.QApplication.quit()
             return True
