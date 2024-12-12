@@ -848,7 +848,7 @@ class Geometrics:
 
     def write_dat(self, file):
         """
-        Writes Geometrics magnetic gradiometer file in *.dat (Surfer) format.
+        Writes Geometrics magnetic gradiometer file in .dat (Surfer) format.
 
         Parameters
         ----------
