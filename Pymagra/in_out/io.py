@@ -8,11 +8,13 @@ Last modified on Nov 21, 2024
 Contains functions for data input/output
 
 Contains methods:
-    get_files
-    read_lineaments
-    read_synthetic_model
-    read_geography_file
-    get_mag_field
+    - get_files
+    - read_lineaments
+    - read_synthetic_model
+    - read_geography_file
+    - get_mag_field
+    - read_geometrics
+    - write_geometrics
 
 """
 
@@ -52,20 +54,15 @@ def get_files(dir0=None, ftype=None):
         dir0 = None
     files = list(
         QtWidgets.QFileDialog.getOpenFileNames(
-            None,
-            "Select data files",
-            "",
-            filter="stn/gxf/XYZ/dat (*.stn *.gxf *.XYZ *.dat) ;; all (*.*)",
-        )
-    )
+            None, "Select data files", "",
+            filter="stn/gxf/XYZ/dat (*.stn *.gxf *.XYZ *.dat) ;; all (*.*)"))
     if len(files) == 0:
         print("No file chosen, program finishes")
         sys.exit("No file chosen")
     elif len(files[0]) == 0:
         print(
             "\nNo file chosen, program finishes\n\n"
-            + "You probably must close the Spyder console before restarting"
-        )
+            + "You probably must close the Spyder console before restarting")
         sys.exit("No file chosen")
     # Sort chosen file names
     files[0].sort()
@@ -107,12 +104,9 @@ def get_files(dir0=None, ftype=None):
             data_types.append("")
     if len(data_files) == 0:
         _ = QtWidgets.QMessageBox.critical(
-            None,
-            "Error",
-            "No valid data files given\n\n"
+            None, "Error", "No valid data files given\n\n"
             + f"Only {valid_extensions} allowed.\n\nProgram stops",
-            QtWidgets.QMessageBox.Ok,
-        )
+            QtWidgets.QMessageBox.Ok)
         raise Exception("File type error.\n")
     # Ask for data types
     labels = []
@@ -135,7 +129,8 @@ def get_files(dir0=None, ftype=None):
                 values.append("1")
             types.append("r")
         if len(labels) > 0:
-            results, ok_button = dialog(labels, types, values, title="data types")
+            results, ok_button = dialog(labels, types, values,
+                                        title="data types")
             if not ok_button:
                 print("No entry, program finished")
                 sys.exit()
@@ -161,13 +156,14 @@ def read_lineaments(file="lineaments.dat"):
     Returns
     -------
     lineaments : dictionary
-        the following entries are available:
-            "x" : numpy 1D float array
-                contains x coordinates of lineaments (E-W direction)
-            "y" : numpy 1D float array
-                contains y coordinates of lineaments (N-S direction)
-            "type" : str
-                Type of lineament. May be "magnetic" or "gravity"
+        The following entries are available:
+
+        - "x" : numpy 1D float array
+          Contains x coordinates of lineaments (E-W direction)
+        - "y" : numpy 1D float array
+          Contains y coordinates of lineaments (N-S direction)
+        - "type" : str
+          Type of lineament. May be "magnetic" or "gravity"
 
     """
     with open(file, "r", encoding="utf-8") as fi:
@@ -204,18 +200,20 @@ def read_synthetic_model():
     The file should have an extension .txt, .dat or .mod
     The model is composed of rectangular prisms with faces parallel to axis.
     The format of the file is as follows:
-        No header line
-        One line per prism to be calculated containing 7 to 11 values each:
-            xmin, xmax, ymin, ymax, zmin, zmax, sus, rem_s, rem_i, rem_d, rho
-            xmin, xmax: minimum and maximum x_coordinates (E-W) of prism [m]
-            ymin, ymax: minimum and maximum y_coordinates (N-S) of prism [m]
-            zmin, zmax: minimum and maximum z_coordinates (positive down) of
-            prism [m]
-            sus: susceptibility [SI units]
-            rem_s: intensity of remanent magnetization [A/m]
-            rem_i: inclination of remanent magnetization [degrees]
-            rem_d: declination of remanent magnetization [degrees]
-            rho: density of prism [kg/m3]
+
+    - No header line
+    - One line per prism to be calculated containing 7 to 11 values each:
+      xmin, xmax, ymin, ymax, zmin, zmax, sus, rem_s, rem_i, rem_d, rho
+    
+    - xmin, xmax: minimum and maximum x_coordinates (E-W) of prism [m]
+    - ymin, ymax: minimum and maximum y_coordinates (N-S) of prism [m]
+    - zmin, zmax: minimum and maximum z_coordinates (positive down) of
+      prism [m]
+    - sus: susceptibility [SI units]
+    - rem_s: intensity of remanent magnetization [A/m]
+    - rem_i: inclination of remanent magnetization [degrees]
+    - rem_d: declination of remanent magnetization [degrees]
+    - rho: density of prism [kg/m3]
 
     Returns
     -------
@@ -239,12 +237,8 @@ def read_synthetic_model():
     """
     file = list(
         QtWidgets.QFileDialog.getOpenFileName(
-            None,
-            "Select model file",
-            "",
-            filter="txt/dat/mod (*.txt *.dat *.mod) ;; all (*.*)",
-        )
-    )
+            None, "Select model file", "",
+            filter="txt/dat/mod (*.txt *.dat *.mod) ;; all (*.*)"))
     if len(file) == 0:
         print("No file chosen, program finishes")
         return None, None, None, None, None, None, None, None
@@ -274,9 +268,7 @@ def read_synthetic_model():
                 "Synthetic model file does not have enough columns:\n"
                 + f"At least 7 columns are needed, {ncol} found.\n"
                 + "Synthetic modeling aborted.",
-                QtWidgets.QMessageBox.Close,
-                QtWidgets.QMessageBox.Ignore,
-            )
+                QtWidgets.QMessageBox.Close, QtWidgets.QMessageBox.Ignore)
             return None, None, None, None, None, None, None, None
         if ncol < 11:
             if ncol == 7:
@@ -289,8 +281,7 @@ def read_synthetic_model():
                 "Synthetic model file has only {ncol} columns:\n"
                 + f"{text}\nPress Ignore to accept or Abort to abandon.",
                 QtWidgets.QMessageBox.Ignore | QtWidgets.QMessageBox.Abort,
-                QtWidgets.QMessageBox.Ignore,
-            )
+                QtWidgets.QMessageBox.Ignore)
             if answer == QtWidgets.QMessageBox.Abort:
                 return None, None, None, None, None, None, None, None
         xmin.append(float(val[0]))
@@ -332,16 +323,8 @@ def read_synthetic_model():
         z = np.zeros((nprism, 2))
         z[:, 0] = np.array(zmin)
         z[:, 1] = np.array(zmax)
-    return (
-        x,
-        y,
-        z,
-        np.array(sus),
-        np.array(rem),
-        np.array(rem_i),
-        np.array(rem_d),
-        np.array(rho),
-    )
+    return x, y, z, np.array(sus), np.array(rem), np.array(rem_i), \
+        np.array(rem_d), np.array(rho)
 
 
 def read_geography_file(file):
@@ -450,10 +433,7 @@ def get_mag_field(line_dir, strength=None, inclination=None, declination=None):
     if strength is None:
         results, _ = dialog(
             ["Field strength [nT]", "Field inclination", "Field declination"],
-            ["e", "e", "e"],
-            [50000, 62, 0],
-            "Earth's field parameters",
-        )
+            ["e", "e", "e"], [50000, 62, 0], "Earth's field parameters")
         strength = float(results[0])
         inclination = float(results[1])
         declination = float(results[2]) - line_dir

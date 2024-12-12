@@ -57,8 +57,8 @@ def dialog(labels, types, values, title="Title"):
         - For radiobuttons, the returned value indicates the number of the
           active button (counting starts at zero).
         - For checkboxes, the returned value is -1 if the box was not checked
-         or gives the order in which the box was checked (starting at zero for
-         the first box having been checked).
+          or gives the order in which the box was checked (starting at zero for
+          the first box having been checked).
 
     Dbutton: bool
         If True, "Apply" button has been pressed to finish dialog, if False
