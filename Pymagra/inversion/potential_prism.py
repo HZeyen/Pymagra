@@ -7,12 +7,12 @@ Last modified: Nov 22, 2024
 
 Contains two classes:
     Prism: Defines position and properties of one prism
-           Contains the following methods:
-           - __init__
-           - mag_prism (calculates magnetic effect at one point)
-           - grav_prism (calculates gravity effect at one point)
-           - change_props (modifies one or several properties)
-           - change_coor (modifies one or several prism coordinates)
+        Contains the following methods:
+        - __init__
+        - mag_prism (calculates magnetic effect at one point)
+        - grav_prism (calculates gravity effect at one point)
+        - change_props (modifies one or several properties)
+        - change_coor (modifies one or several prism coordinates)
 
     Prism_calc: Allows defining a model composed of a series of prisms and
     calculation of effects at a vector of points.
@@ -55,31 +55,43 @@ class Prism(Earth):
 
     Uses collections of functions from mag_grav_utilities.py
 
-    Input:
-        x: numpy float array with 2 values
-            x[0]: coordinate of the western edge of the prism [m]
-            x[1]: coordinate of the eastern edge of the prism [m]
-        y: numpy float array with 2 values
-            y[0]: coordinate of the southern edge of the prism [m]
-            y[1]: coordinate of the northern edge of the prism [m]
-        z: numpy float array with 2 values
-            z[0]: coordinate of the upper edge of the prism [m]
-            z[1]: coordinate of the lower edge of the prism [m]
-            Positive downward
-        sus: susceptibility [SI]
-        rem: Remanent magnetization [A/m]
-        inc: Inclination fo the remanent magnetization [degrees]
-        dec: Declination fo the remanent magnetization [degrees]
-        dens: Density of the prism [kg/m3] (not yet used, TODO)
-        earth: class Earth_mag object
-                contains the properties of the Earth's magnetic field
+    Input
+    -----
 
-    Methods:
-        __init__
-        mag_prism (calculates magnetic effect at one point)
-        grav_prism (calculates gravity effect at one point)
-        change_props (modifies one or several properties)
-        change_coor (modifies one or several prism coordinates)
+    x: numpy float array with 2 values
+        x[0]: coordinate of the western edge of the prism [m]
+        x[1]: coordinate of the eastern edge of the prism [m]
+
+    y: numpy float array with 2 values
+        y[0]: coordinate of the southern edge of the prism [m]
+        y[1]: coordinate of the northern edge of the prism [m]
+
+    z: numpy float array with 2 values
+        z[0]: coordinate of the upper edge of the prism [m]
+        z[1]: coordinate of the lower edge of the prism [m]
+        Positive downward
+
+    sus: susceptibility [SI]
+
+    rem: Remanent magnetization [A/m]
+
+    inc: Inclination fo the remanent magnetization [degrees]
+
+    dec: Declination fo the remanent magnetization [degrees]
+
+    dens: Density of the prism [kg/m3] (not yet used, TODO)
+
+    earth: class Earth_mag object
+            contains the properties of the Earth's magnetic field
+
+    Methods
+    -------
+
+    - __init__
+    - mag_prism (calculates magnetic effect at one point)
+    - grav_prism (calculates gravity effect at one point)
+    - change_props (modifies one or several properties)
+    - change_coor (modifies one or several prism coordinates)
 
     """
 
@@ -129,6 +141,9 @@ class Prism(Earth):
         self.z_neigh = []
 
     def comps(self):
+        """
+        Calculate magnetization components
+        """
         self.tx, self.ty, self.tz = utils.magnetization_components(
             self.sus, self.rem, self.dec, self.inc, self.earth)
 
@@ -138,12 +153,15 @@ class Prism(Earth):
         its sides parallel to the coordinate system at one measurement point.
         Needs susceptibilities in cgs system (SI/4pi))
 
-        Intput:
-            xp, yp, zp : float
+        Parameters
+        ----------
+        xp, yp, zp : 1D Numpy float arrays
+            Coordinates of all calculation points
 
         Returns
-            delx, dely, delz : float
-                N-S, E-W and Z component of the effect of the body
+        -------
+        delx, dely, delz : float
+            N-S, E-W and Z component of the effect of the body
 
         """
 # a, b and h are the distances between prism edges and calculation point
@@ -163,7 +181,7 @@ class Prism(Earth):
 # Make sure inside h, the coordinates are stored smaller value first
 # If body is located above the calculation point, absolute values of
 # z coordiantes are stored, but the sign of the anomaly will be reversed
-# Z prism is positive downwars, zp (z point is positive upward)
+# Z prism is positive downwards, zp (z point is positive upward)
 #
 # TODO:
 # What happens if calculation point is located within the body or at least
@@ -267,13 +285,15 @@ class Prism(Earth):
         """
         Calculates the exact 3D gravity effect of a vertical rectangular prism.
 
-        Intput:
-            xp, yp, zp : float
-                coordinates of the point where the effect is to be calculated
+        Parameters
+        ----------
+        xp, yp, zp : float
+            Coordinates of the point where the effect is to be calculated
 
         Returns
-            g : float
-                Gravity effect of the body
+        -------
+        g : float
+            Gravity effect of the body
 
         """
         if np.isclose(self.z[0], self.z[1]):
@@ -323,18 +343,16 @@ class Prism(Earth):
 
         Parameters
         ----------
-        sus : float, optional
-            Susceptibility [SI system]. The default is None.
-        rem : float, optional
-            Remanent magnetization [A/m]. The default is None.
-        inc : float, optional
-            Inclination of remanent magnetization [degrees]. The default is
-            None.
-        dec : float, optional
-            Declination of remanent magnetization [degrees]. The default is
-            None.
-        dens : float, optional
-            Ensity [kg/m3]. The default is None.
+        sus : float, optional; default: None
+            Susceptibility [SI system].
+        rem : float, optional; default: None
+            Remanent magnetization [A/m].
+        inc : float, optional; default: None
+            Inclination of remanent magnetization [degrees].
+        dec : float, optional; default: None
+            Declination of remanent magnetization [degrees].
+        dens : float, optional; default: None
+            Density [kg/m3].
 
         Returns
         -------
@@ -361,20 +379,18 @@ class Prism(Earth):
 
         Parameters
         ----------
-        xmin : float, optional
-            Coordiante of western face of prism [m]. The default is None.
-        xmax : float, optional
-            Coordiante of eastern face of prism [m]. The default is None.
-        ymin : float, optional
-            Coordiante of southern face of prism [m]. The default is None.
-        ymax : float, optional
-            Coordiante of northern face of prism [m]. The default is None.
-        zmin : float, optional
+        xmin : float, optional; default: None
+            Coordiante of western face of prism [m].
+        xmax : float, optional; default: None
+            Coordiante of eastern face of prism [m].
+        ymin : float, optional; default: None
+            Coordiante of southern face of prism [m].
+        ymax : float, optional; default: None
+            Coordiante of northern face of prism [m].
+        zmin : float, optional; default: None
             Coordiante of upper face of prism ([m] positive below surface).
-            The default is None.
-        zmax : float, optional
+        zmax : float, optional; default: None
             Coordiante of lower face of prism ([m] positive below surface).
-            The default is None.
 
         Returns
         -------
@@ -398,26 +414,24 @@ class Prism(Earth):
 class Prism_calc(Prism, Earth):
     """
     Contains the following methods:
-    __init__
-    add_prism: adds an entrance of class Prism to a dictionary
-    remove_prism: removes an entrance of classe Prism from dictionary
-    mag_forward: Solves magnetic forward problem for all prisms
-                 at all points
-    mag_deriv: Calculates derivatives of magnetic effect with respect
-                to magnetic properties (susceptibility and/or remanence)
-    grav_forward: Solves gravity forward problem for all prisms
-                 at all points
-    grav_deriv: Calculates derivatives of magnetic effect with respect
-                to density
-    create_Frechet: Assembles the derivative vectors of each prism
-                into a Freceht matrix
-    get_max_prisms: Find all prisms located below the strongest
-                absolute maximum of magnetic and gravity fields.
-                Usually used during inversion procedure where
-                the data correspond to actual misfit.
-    split: split a prism into up to 8 prisms having half size in
-                all directions as long as prisms stay larger than
-                a given minimum size.
+
+    - __init__
+    - add_prism: adds an entrance of class Prism to a dictionary
+    - remove_prism: removes an entrance of classe Prism from dictionary
+    - mag_forward: Solves magnetic forward problem for all prisms at all points
+    - mag_deriv: Calculates derivatives of magnetic effect with respect to
+      magnetic properties (susceptibility and/or remanence)
+    - grav_forward: Solves gravity forward problem for all prisms at all points
+    - grav_deriv: Calculates derivatives of magnetic effect with respect to
+      density
+    - create_Frechet: Assembles the derivative vectors of each prism into a
+      Frechet matrix
+    - get_max_prisms: Find all prisms located below the strongest absolute
+      maximum of magnetic and gravity fields. Usually used during inversion
+      procedure where the data correspond to actual misfit.
+    - split: split a prism into up to 8 prisms having half size in all
+      directions as long as prisms stay larger than a given minimum size.
+
     """
 
     def __init__(self, e, min_size_x=0., min_size_y=0., min_size_z=0.):
@@ -530,7 +544,7 @@ class Prism_calc(Prism, Earth):
         xp : numpy 1D float array [n_points]
             X-coordiante of field points
             [nr: number of rows in NS direction, nc: number columns in EW
-             direction]
+            direction]
         yp : numpy 1D float array [n_points]
             Y-coordiante of field points
         zp : numpy 1D float array [n_points]
@@ -578,7 +592,7 @@ class Prism_calc(Prism, Earth):
         xp : numpy 1D float array [n_points]
             X-coordiante of field points
             [nr: number of rows in NS direction, nc: number columns in EW
-             direction]
+            direction]
         yp : numpy 1D float array [n_points]
             Y-coordiante of field points
         zp : numpy 1D float array [n_points]
@@ -635,7 +649,7 @@ class Prism_calc(Prism, Earth):
         xp : numpy 1D float array [n_points]
             X-coordiante of field points
             [nr: number of rows in NS direction, nc: number columns in EW
-             direction]
+            direction]
         yp : numpy 1D float array [n_points]
             Y-coordiante of field points
         zp : numpy 1D float array [n_points]
@@ -668,7 +682,7 @@ class Prism_calc(Prism, Earth):
         xp : numpy 1D float array [n_points]
             X-coordiante of field points
             [nr: number of rows in NS direction, nc: number columns in EW
-             direction]
+            direction]
         yp : numpy 1D float array [n_points]
             Y-coordiante of field points
         zp : numpy 1D float array [n_points]

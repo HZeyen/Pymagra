@@ -20,7 +20,6 @@ from matplotlib.patches import Rectangle
 from ..in_out.dialog import dialog
 from .potential_prism import Prism_calc as PP
 from . import mag_grav_utilities as utils
-from ..plotting.main_window import mainWindow
 from ..plotting.new_window import newWindow
 
 
@@ -95,6 +94,7 @@ class inversion():
         self.sus_inv = False
         self.rem_inv = False
         self.rho_inv = False
+        self.positive = False
         self.xprism_min = 0.
         self.xprism_max = 0.
         self.dx_prism = 0.
@@ -178,10 +178,10 @@ class inversion():
             self.iteration += 1
             if self.max_iter == 0:
                 print("\nOnly forward model calculated")
-                G = self.mPrism.create_Frechet(
+                self.G = self.mPrism.create_Frechet(
                     self.sus_inv, self.rem_inv, self.rho_inv, self.x,
                     self.y, self.z)
-                self.data_mod = np.matmul(G, self.params)
+                self.data_mod = np.matmul(self.G, self.params)
                 return
 # Calculate effect of actual model
             print(f"\nStart iteration {self.iteration}")
@@ -189,13 +189,12 @@ class inversion():
 # Create Frechet matrix and covariance matrices
             self.n_param = self.mPrism.get_n_param(
                 self.sus_inv, self.rem_inv, self.rho_inv)
-            S = self.mPrism.create_smooth(
+            self.S = self.mPrism.create_smooth(
                 self.sus_inv, self.rem_inv, self.rho_inv, self.sigma_sus,
                 self.sigma_rem, self.sigma_rho, self.depth_ref)
-            G = self.mPrism.create_Frechet(
+            self.G = self.mPrism.create_Frechet(
                 self.sus_inv, self.rem_inv, self.rho_inv, self.x, self.y,
                 self.z)
-            icol = 0
 # Define data covariance and regularization matrices.
 # Since both matrices have only values on their diagonal, values are stored as
 # 1D vector. For the regularization matrix, the base value is the squared one
@@ -204,97 +203,110 @@ class inversion():
 #    factor = (average_depth_of_prism/depth_ref) squared of gravity data and
 #    to the power of three for magnetic data. Depth_ref is given interactively
 #    by the user
-            dat = np.copy(self.data)
-            if self.depth_ref > 1.:
-                fac = (self.depth_ref-1.)/self.zprism_max
-            elif self.depth_ref < 1.:
-                fac = (1./self.depth_ref-1.)/self.zprism_max
-            else:
-                fac = 1.
-            if "m" in self.data_type:
-                sigma_data = np.ones(self.n_data)/self.sigma_mag**2
-                i = -1
-                if self.sus_inv:
-                    sigma_param = np.ones(self.mPrism.n_prisms)\
-                        / self.sigma_sus**2
-                    if not np.isclose(self.depth_ref, 1.):
-                        for _, val in self.mPrism.prisms.items():
-                            i += 1
-                            f = 1.+(val.z[0]+val.z[1])/2.*fac
-                            if self.depth_ref < 1.:
-                                f = 1./f
-                            sigma_param[i] *= f**3
-                    icol += self.n_prisms
-                elif self.rem_inv:
-                    sigma_param = np.ones(self.mPrism.n_prisms)\
-                        / self.sigma_rem**2
-                    if not np.isclose(self.depth_ref, 1.):
-                        for _, val in self.mPrism.prisms.items():
-                            i += 1
-                            f = 1.+(val.z[0]+val.z[1])/2.*fac
-                            if self.depth_ref < 1.:
-                                f = 1./f
-                            sigma_param[i] *= f**3
-                    icol += self.n_prisms
-            else:
-                sigma_data = np.ones(self.n_data)/self.sigma_grav**2
-                sigma_param =\
-                    np.ones(self.mPrism.n_prisms)/self.sigma_rho**2
-                i = -1
-                if not np.isclose(self.depth_ref, 1.):
-                    for _, val in self.mPrism.prisms.items():
-                        i += 1
-                        f = 1.+(val.z[0]+val.z[1])/2.*fac
-                        if self.depth_ref < 1.:
-                            f = 1./f
-                        sigma_param[i] *= f**2
-            sigma_param = np.concatenate((sigma_param, np.array([0.])))
-            print(f"Frechet calculated, shape: {G.shape}")
+            self.dat = np.copy(self.data)
+            self.sigma_data, self.sigma_param = self.sigmas()
+            print(f"Frechet calculated, shape: {self.G.shape}")
 
+            if self.positive:
+                fit = []
+                self.dat = self.data_ori
+                dd = np.copy(self.dat)
+                self.params[:-1] = 0.001
+                self.params[-1] = 0.
+                for it in range(50):
+                    self.yparam = np.copy(self.params)
+                    self.yparam[:-1] = np.log(self.params[:-1])
+                    fac = np.copy(self.params)
+                    fac[-1] = 1.
+                    G0 = self.G*fac
+                    GCT = G0.T*self.sigma_data
+                    G_inv = np.matmul(GCT, G0)
+                    Gi_max = abs(G_inv).max()
+                    Gp = self.lam*self.sigma_param*0.001
+                    Gp_max = Gp.max()
+                    Gp_fac = Gi_max/Gp_max
+                    Gs = self.gam*self.S*0.001
+                    Gs_max = Gs.max()
+                    Gs_fac = Gi_max/Gs_max
+                    if self.iteration == 0 and it == 0:
+                        print(f"\nMaximum GT*Cd*G: {Gi_max:0.1f}")
+                        print(f"   Maximum regularization: {Gp_max:0.1f} (fac:"
+                              + f" {Gp_fac:0.1f})")
+                        print(f"   Maximum smoothing     : {Gs_max:0.1f} (fac:"
+                              + f" {Gs_fac:0.1f})")
+                    G_inv += Gs
+                    G_inv[np.diag_indices(G_inv.shape[0])] += Gp
+                    d_par = np.matmul(np.matmul(np.linalg.inv(G_inv), GCT), dd)
+                    yp = self.yparam+d_par
+                    if yp[:-1].max() > 0.:
+                        ip = np.argmax(yp[:-1])
+                        factor = -self.yparam[ip]/d_par[ip]
+                    else:
+                        factor = 1.
+                    self.yparam[:-1] += d_par[:-1]*factor
+                    self.yparam[-1] += d_par[-1]
+                    self.params = np.copy(self.yparam)
+                    self.params[:-1] = np.exp(self.yparam[:-1])
+                    self.params[:-1][self.params[:-1] < 1.E-7] = 1.E-7
+                    self.data_mod = np.matmul(self.G, self.params)
+                    dd = self.dat - self.data_mod
+                    fit.append(np.std(dd))
+                    if it < 2:
+                        continue
+                    if abs((fit[-2] - fit[-1])/fit[-2]) < 1.E-5:
+                        break
 # Do inversion
-            GCT = G.T*sigma_data
-            G_inv = np.matmul(GCT, G)
+            else:
+                GCT = self.G.T*self.sigma_data
+                G_inv = np.matmul(GCT, self.G)
 # For first iteration test whether regularization and smoothing matrices have
 #     an appreciable effect. If not, give a warning message
-            if self.iteration == 0:
-                mG = G_inv.max()
-                mSig = (self.lam*sigma_param).max()
-                mSmo = (self.gam*S).max()
-                G_Sig = mG/mSig
-                G_Smo = mG/mSmo
-                if G_Sig > 10 or G_Smo > 10:
-                    answer = QtWidgets.QMessageBox.warning(
-                        None, "Warning",
-                        "Regularization or smoothing much smaller than "
-                        + "Frechet\n"
-                        + f"     Frechet/Regularization: {G_Sig:0.0f}\n"
-                        + f"     Frechet/Smoothing: {G_Smo:0.0f}\n"
-                        + "You may increase lambda/gamma or restart and "
-                        + "decrease parameter variances\n\n"
-                        + "Ignore to continue nevertheless\nRetry to give "
-                        + "new initial lambda/gamma\nAbort "
-                        + "to stop inversion\n",
-                        QtWidgets.QMessageBox.Ignore |
-                        QtWidgets.QMessageBox.Abort |
-                        QtWidgets.QMessageBox.Retry,
-                        QtWidgets.QMessageBox.Ignore)
-                    if answer == QtWidgets.QMessageBox.Abort:
-                        sys.exit()
-                    elif answer == QtWidgets.QMessageBox.Retry:
-                        results, okButton = dialog(
-                                ["New Initial lambda (regularization)",
-                                 "New initial gamma (smoothing)"],
-                                ["e", "e"], [self.lam, self.gam],
-                                "New inversion parameters")
-                        if okButton:
-                            self.lam = float(results[0])
-                            self.gam = float(results[1])
+                if self.iteration == 0:
+                    mG = abs(G_inv).max()
+                    print(f"\nMaximum GT*Cd*G: {mG:0.1f}")
+                    mSig = (self.lam*self.sigma_param).max()
+                    mSmo = (self.gam*self.S).max()
+                    G_Sig = mG/mSig
+                    G_Smo = mG/mSmo
+                    print(f"   Maximum regularization: {mSig:0.1f} (fac: "
+                          + f"{G_Sig:0.1f})")
+                    print(f"   Maximum smoothing: {mSmo:0.1f} (fac: "
+                          + f"{G_Smo:0.1f})")
+                    if G_Sig > 10 or G_Smo > 10:
+                        answer = QtWidgets.QMessageBox.warning(
+                            None, "Warning",
+                            "Regularization or smoothing much smaller than "
+                            + "Frechet\n"
+                            + f"     Frechet/Regularization: {G_Sig:0.0f}\n"
+                            + f"     Frechet/Smoothing: {G_Smo:0.0f}\n"
+                            + "You may increase lambda/gamma or restart and "
+                            + "decrease parameter variances\n\n"
+                            + "Ignore to continue nevertheless\nRetry to give "
+                            + "new initial lambda/gamma\nAbort "
+                            + "to stop inversion\n",
+                            QtWidgets.QMessageBox.Ignore |
+                            QtWidgets.QMessageBox.Abort |
+                            QtWidgets.QMessageBox.Retry,
+                            QtWidgets.QMessageBox.Ignore)
+                        if answer == QtWidgets.QMessageBox.Abort:
+                            sys.exit()
+                        elif answer == QtWidgets.QMessageBox.Retry:
+                            results, okButton = dialog(
+                                    ["New Initial lambda (regularization)",
+                                     "New initial gamma (smoothing)"],
+                                    ["e", "e"], [self.lam, self.gam],
+                                    "New inversion parameters")
+                            if okButton:
+                                self.lam = float(results[0])
+                                self.gam = float(results[1])
 
-            G_inv[np.diag_indices(G_inv.shape[0])] += self.lam*sigma_param
-            G_inv += self.gam*S
-            d_par = np.matmul(np.matmul(np.linalg.inv(G_inv), GCT), dat)
-            self.params += d_par
-            self.data_mod = np.matmul(G, self.params)
+                G_inv[np.diag_indices(G_inv.shape[0])] +=\
+                    self.lam*self.sigma_param
+                G_inv += self.gam*self.S
+                d_par = np.matmul(np.matmul(np.linalg.inv(G_inv), GCT),
+                                  self.dat)
+                self.params += d_par
+            self.data_mod = np.matmul(self.G, self.params)
 # Extract new prism properties from parameter vector, set the correspondig
 #   values in the prism parameters and copy them into vector par_hist
             i0 = 0
@@ -382,36 +394,36 @@ class inversion():
                 key_m1 = self.mPrism.get_max_prisms(
                     abs(data[:self.n_data1]).
                     reshape(self.data1_shape),
-                    G[:self.n_data1, :self.n_prisms],
+                    self.G[:self.n_data1, :self.n_prisms],
                     max_lim=self.max_amp, width=self.width_max)
                 key_m2 = self.mPrism.get_max_prisms(
                     abs(data[self.n_data1:]).
                     reshape(self.data2_shape),
-                    G[self.n_data1:, :self.n_prisms],
+                    self.G[self.n_data1:, :self.n_prisms],
                     max_lim=self.max_amp, width=self.width_max)
                 key_m = list(np.unique(np.array(key_m1+key_m2)))
             else:
                 key_m = self.mPrism.get_max_prisms(
                     abs(data.reshape(self.data_shape)),
-                    G[:self.n_data1, :self.n_prisms],
+                    self.G[:self.n_data1, :self.n_prisms],
                     width=self.width_max)
             if self.sus_inv and self.rem_inv:
                 if self.n_sensor == 2:
                     key_r1 = self.mPrism.get_max_prisms(
                         abs(data[:self.n_data1]).
                         reshape(self.data1_shape),
-                        G[:self.n_data1, self.n_prisms:],
+                        self.G[:self.n_data1, self.n_prisms:],
                         max_lim=self.max_amp, width=self.width_max)
                     key_r2 = self.mPrism.get_max_prisms(
                         abs(data[self.n_data1:]).
                         reshape(self.data2_shape),
-                        G[self.n_data1:, self.n_prisms:],
+                        self.G[self.n_data1:, self.n_prisms:],
                         max_lim=self.max_amp, width=self.width_max)
                     key_r = list(np.unique(np.array(key_r1+key_r2)))
                 else:
                     key_r = self.mPrism.get_max_prisms(
                         abs(data.reshape(self.data1_shape)),
-                        G[:self.n_data1, self.n_prisms:],
+                        self.G[:self.n_data1, self.n_prisms:],
                         max_lim=self.max_amp, width=self.width_max)
             key_split = list(np.unique(np.array(key_m+key_r)))
 # Test whether prisms are marked for splitting
@@ -457,6 +469,54 @@ class inversion():
             print(f"New lambda: {self.lam}; new gamma: {self.gam}")
             if self.max_iter == 0:
                 return
+
+    def sigmas(self):
+        icol = 0
+        if self.depth_ref > 1.:
+            fac = (self.depth_ref-1.)/self.zprism_max
+        elif self.depth_ref < 1.:
+            fac = (1./self.depth_ref-1.)/self.zprism_max
+        else:
+            fac = 1.
+        if "m" in self.data_type:
+            sigma_data = np.ones(self.n_data)/self.sigma_mag**2
+            i = -1
+            if self.sus_inv:
+                sigma_param = np.ones(self.mPrism.n_prisms)\
+                    / self.sigma_sus**2
+                if not np.isclose(self.depth_ref, 1.):
+                    for _, val in self.mPrism.prisms.items():
+                        i += 1
+                        f = 1.+(val.z[0]+val.z[1])/2.*fac
+                        if self.depth_ref < 1.:
+                            f = 1./f
+                        sigma_param[i] *= f**3
+                icol += self.n_prisms
+            elif self.rem_inv:
+                sigma_param = np.ones(self.mPrism.n_prisms)\
+                    / self.sigma_rem**2
+                if not np.isclose(self.depth_ref, 1.):
+                    for _, val in self.mPrism.prisms.items():
+                        i += 1
+                        f = 1.+(val.z[0]+val.z[1])/2.*fac
+                        if self.depth_ref < 1.:
+                            f = 1./f
+                        sigma_param[i] *= f**3
+                icol += self.n_prisms
+        else:
+            sigma_data = np.ones(self.n_data)/self.sigma_grav**2
+            sigma_param =\
+                np.ones(self.mPrism.n_prisms)/self.sigma_rho**2
+            i = -1
+            if not np.isclose(self.depth_ref, 1.):
+                for _, val in self.mPrism.prisms.items():
+                    i += 1
+                    f = 1.+(val.z[0]+val.z[1])/2.*fac
+                    if self.depth_ref < 1.:
+                        f = 1./f
+                    sigma_param[i] *= f**2
+        sigma_param = np.concatenate((sigma_param, np.array([0.])))
+        return sigma_data, sigma_param
 
     def show_results2D(self, file):
         """
@@ -706,6 +766,7 @@ class inversion():
                     ax.set_yticklabels([])
                 ax.set_xlim([self.xprism_min, self.xprism_max])
                 ax.set_ylim([self.yprism_min, self.yprism_max])
+                ax.set_aspect("equal", adjustable="box")
                 if k < nax_plot:
                     ax.set_xlabel("")
                 if j > 0:
@@ -765,11 +826,14 @@ class inversion():
 
 # Plot magnetic anomalies produced by inverted model
         data = self.data_mod[:self.n_data1].reshape(self.data1_shape)
+        med = np.nanmedian(data)
+        data -= med
         vmin = np.ceil(np.quantile(data, 0.005)*1000)/1000
         vmax = np.ceil(np.quantile(data, 0.995)*1000)/1000
         br_map, norm = utils.mag_color_map(vmin, vmax)
         im, cbar = utils.data_plot(
-            data, self.fig_theo.fig, self.ax_theo[0], title=f"{title}",
+            data, self.fig_theo.fig, self.ax_theo[0],
+            title=f"{title}\nMedian: {med:0.1f}",
             xtitle=f"Easting [{self.ax_unit}]",
             ytitle=f"Northing [{self.ax_unit}]",
             cmap=br_map, norm=norm, cbar_title=unit,
@@ -834,12 +898,14 @@ class inversion():
                 self.nticks = 5
 # Plot magnetic anomalies produced by inverted model
             data = self.data_mod[self.n_data1:].reshape(self.data2_shape)
+            med = np.median(data)
+            data -= med
             vmin = np.ceil(np.quantile(data, 0.005)*1000)/1000
             vmax = np.ceil(np.quantile(data, 0.995)*1000)/1000
             br_map, norm = utils.mag_color_map(vmin, vmax)
             im, cbar = utils.data_plot(
                 data, self.fig_theo2.fig, self.ax_theo2[0],
-                title="Modelled magnetic sensor2",
+                title=f"Modelled magnetic sensor2\nMedian: {med:0.1f}",
                 xtitle=f"Easting [{self.ax_unit}]",
                 ytitle=f"Northing [{self.ax_unit}]",
                 cmap=br_map, norm=norm, cbar_title=unit,
@@ -1102,12 +1168,13 @@ class inversion():
                      "Minimum lambda",
                      "Initial Gamma (smoothing)",
                      "Gamma factor per iteration",
-                     "Minimum Gamma"],
+                     "Minimum Gamma",
+                     "Use positivity constraint"],
                     ["l", "c", "c", "e", "e", "e", "e", "e", "e", "e", "e",
-                     "e"],
+                     "e", "c"],
                     [None, 1, 0, self.max_iter, self.max_diff_fac,
                      self.max_rel_diff, self.lam, self.lam_fac, self.lam_min,
-                     self.gam, self.gam_fac, self.gam_min],
+                     self.gam, self.gam_fac, self.gam_min, None],
                     "Magnetic inversion parameters")
         else:
             results, okButton = dialog(
@@ -1119,11 +1186,12 @@ class inversion():
                      "Minimum lambda",
                      "Initial Gamma (smoothing)",
                      "Gamma factor per iteration",
-                     "Minimum Gamma"],
-                    ["e", "e", "e", "e", "e", "e", "e", "e", "e"],
+                     "Minimum Gamma",
+                     "Use positivity constraint"],
+                    ["e", "e", "e", "e", "e", "e", "e", "e", "e", "c"],
                     [self.max_iter, self.max_diff_fac, self.max_rel_diff,
                      self.lam, self.lam_fac, self.lam_min,
-                     self.gam, self.gam_fac, self.gam_min],
+                     self.gam, self.gam_fac, self.gam_min, None],
                     "Gravity inversion parameters")
         if not okButton:
             print("No inversion parameters given")
@@ -1170,6 +1238,11 @@ class inversion():
         self.gam_fac = float(results[ianswer])
         ianswer += 1
         self.gam_min = float(results[ianswer])
+        ianswer += 1
+        if int(results[ianswer]) > -1:
+            self.positive = True
+        else:
+            self.positive = False
         return True
 
     def get_area2D(self):
@@ -1246,7 +1319,7 @@ class inversion():
         """
         Define model space and initial prism sizes for 3D model.
         If block sizes are reduced in certain areas, minimum accepted block
-          sizes are stored in min_size_x, .._y, .._z
+        sizes are stored in min_size_x, .._y, .._z
 
         Defines the following variables
         -------------------------------
@@ -1418,11 +1491,11 @@ class inversion():
                 z2 = self.z2.reshape(self.data2_shape)
                 xcol = np.unique(self.x2)
                 yrow = np.unique(self.y2)
-                nx1 = np.where(xcol >= self.xprism_min)[0][0]
-                nx2 = np.where(xcol <= self.xprism_max)[0][-1]+1
+                nx1 = np.where(xcol >= xdata_min)[0][0]
+                nx2 = np.where(xcol <= xdata_max)[0][-1]+1
                 nx1 = max(nx1, int(self.data_reduction/2))
-                ny1 = np.where(yrow >= self.yprism_min)[0][0]
-                ny2 = np.where(yrow <= self.yprism_max)[0][-1]+1
+                ny1 = np.where(yrow >= ydata_min)[0][0]
+                ny2 = np.where(yrow <= ydata_max)[0][-1]+1
                 ny1 = max(ny1, int(self.data_reduction/2))
                 x = np.concatenate(
                     (x, x2[ny1:ny2:self.data_reduction,
@@ -1519,8 +1592,8 @@ class inversion():
                 ypr = np.array([self.y_prism[j], self.y_prism[j+1]])
                 for k in range(self.mod_zshape):
                     zpr = np.array([self.z_prism[k], self.z_prism[k+1]])
-                    self.mPrism.add_prism(xpr, ypr, zpr, 0., 0.,
-                                          self.earth.inc, self.earth.dec, 0.)
+                    self.mPrism.add_prism(xpr, ypr, zpr, 0.001, 0.1,
+                                          self.earth.inc, self.earth.dec, 10.)
         print("Model prism dictionary defined with "
               + f"{len(self.mPrism.prisms)} prisms")
 # Prepare book-keeping arrays
@@ -1532,6 +1605,20 @@ class inversion():
         self.i0 = self.mPrism.n_prisms
         self.n_param = self.mPrism.n_prisms
         self.params = np.zeros(self.n_param+1)
+        i = -1
+        if self.sus_inv:
+            for key, val in self.mPrism.prisms.items():
+                i += 1
+                self.params[i] = val.sus
+        if self.rem_inv:
+            for key, val in self.mPrism.prisms.items():
+                i += 1
+                self.params[i] = val.rem
+        if self.rho_inv:
+            for key, val in self.mPrism.prisms.items():
+                i += 1
+                self.params[i] = val.rho
+
         return True
 
     def get_variances(self):
