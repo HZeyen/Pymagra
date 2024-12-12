@@ -12,7 +12,6 @@ import os
 from pathlib import Path
 from PyQt5 import QtWidgets
 
-#import Pymagra as pmg
 from Pymagra import PyMaGra
 
 if __name__ == "__main__":
@@ -67,5 +66,4 @@ if __name__ == "__main__":
         sys.exit(app.exec_())
     except Exception as error:
         print(f'An unexpected exception occurred: {error}.')
-        #        sys.exit()
         pass

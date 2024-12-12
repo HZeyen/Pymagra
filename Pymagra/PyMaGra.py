@@ -1687,16 +1687,16 @@ class Main(QtWidgets.QWidget):
                 y.append(yy)
                 z.append(np.ones_like(yy) * (self.data.data["height2"]))
             inv = inversion(data, x, y, z, earth=earth, data_type=data_type)
-# Get area of initial prisms and extract data to be inverted
-            ret = inv.get_area3D()
-            if not ret:
-                return
 # Define inversion parameters
             ret = inv.get_inversion_parameters(data_type)
             if not ret:
                 return
 # Set overall data and parameter variances
             ret = inv.get_variances()
+            if not ret:
+                return
+# Get area of initial prisms and extract data to be inverted
+            ret = inv.get_area3D()
             if not ret:
                 return
 # Do inversion
@@ -1712,8 +1712,8 @@ class Main(QtWidgets.QWidget):
                 if not ret:
                     break
             inv.save_model()
-            os.remove("prism_control.dat")
-            os.remove("par_hist.dat")
+            # os.remove("prism_control.dat")
+            # os.remove("par_hist.dat")
 
         else:
             _ = QtWidgets.QMessageBox.warning(
