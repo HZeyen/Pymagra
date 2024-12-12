@@ -1084,323 +1084,323 @@ class mainWindow(QMainWindow, Ui_MainWindow):
         self.mplvl.removeWidget(self.toolbar)
         self.toolbar.close()
 
-    def plotFloating(self, data, x, y, wtitle="", sizeh=800, sizev=500,
-                     mincol=0, maxcol=0, percent=0, c="rainbow", ptitle="",
-                     xlabel="", ylabel="", clabel=""):
-        """
-        Plot one or several 2D arrays into floating window
+#     def plotFloating(self, data, x, y, wtitle="", sizeh=800, sizev=500,
+#                      mincol=0, maxcol=0, percent=0, c="rainbow", ptitle="",
+#                      xlabel="", ylabel="", clabel=""):
+#         """
+#         Plot one or several 2D arrays into floating window
 
-        Parameters
-        ----------
-        data : numpy array
-            Data to be plotted.
-            The array my be 2D or 3D. If 3D, it is supposed that several
-            figures should be plotted into the same window in different frames.
-            If more than one plot is to be done, the thrid dimension contains
-            the different data sets. Every data set must be 2D. Several data
-            sets may be concatenated into data with the following commands:
+#         Parameters
+#         ----------
+#         data : numpy array
+#             Data to be plotted.
+#             The array my be 2D or 3D. If 3D, it is supposed that several
+#             figures should be plotted into the same window in different frames.
+#             If more than one plot is to be done, the thrid dimension contains
+#             the different data sets. Every data set must be 2D. Several data
+#             sets may be concatenated into data with the following commands:
 
-            - data = data1.reshape(nr,nc,1)
-            - data = np.concatenate((data,data2.reshape(nr,nc,1)),axis=2)
+#             - data = data1.reshape(nr,nc,1)
+#             - data = np.concatenate((data,data2.reshape(nr,nc,1)),axis=2)
 
-            data1 and data2 are arrays with shape (nr,nc) defined on regular
-            grids.
+#             data1 and data2 are arrays with shape (nr,nc) defined on regular
+#             grids.
 
-        x : numpy 1D float array
-            Positions of the columns
-        y : numpy 1D float array
-            Positions of the rows
-        wtitle : str optional, default: empty string
-            Title of floating window
-        sizeh : float optional,default: 800
-            horizontal size of floating window.
-        sizev : float optional, default: 500
-            vertical size of floating window
-        mincol : float optional, default: 0
-            Minimum value of color scale
-        maxcol : float optional,  default: 0
-            Maximum value of color scale.
-            If mincol == maxcol,  and percent == 0, the limits of the color
-            scale are minimum and maximum values of the data.
-        percent : float optional:
-            If >0, mincol and maxcol are calculated as quantiles
-            (percent, 1-percent).
-        c: str optional, default: "rainbow"
-            color scale to be used.
-        ptitle : str, optional, default: empty string
-            May be a single string or a list of strings, where the length of
-            the list must correspond to the length of the third dimension of
-            data.
-        xlabel : str, optional
-            Similar as ptitle for lables of horizontal axis
-        ylabel : str, optional
-            Similar as ptitle for lables of vertical axis
-        clabel : str, optional
-            Similar as ptitle for lables of color bars
+#         x : numpy 1D float array
+#             Positions of the columns
+#         y : numpy 1D float array
+#             Positions of the rows
+#         wtitle : str optional, default: empty string
+#             Title of floating window
+#         sizeh : float optional,default: 800
+#             horizontal size of floating window.
+#         sizev : float optional, default: 500
+#             vertical size of floating window
+#         mincol : float optional, default: 0
+#             Minimum value of color scale
+#         maxcol : float optional,  default: 0
+#             Maximum value of color scale.
+#             If mincol == maxcol,  and percent == 0, the limits of the color
+#             scale are minimum and maximum values of the data.
+#         percent : float optional:
+#             If >0, mincol and maxcol are calculated as quantiles
+#             (percent, 1-percent).
+#         c: str optional, default: "rainbow"
+#             color scale to be used.
+#         ptitle : str, optional, default: empty string
+#             May be a single string or a list of strings, where the length of
+#             the list must correspond to the length of the third dimension of
+#             data.
+#         xlabel : str, optional
+#             Similar as ptitle for lables of horizontal axis
+#         ylabel : str, optional
+#             Similar as ptitle for lables of vertical axis
+#         clabel : str, optional
+#             Similar as ptitle for lables of color bars
 
-        Returns
-        -------
-        fig_float,ax_float: Matplot values of figure and axes
+#         Returns
+#         -------
+#         fig_float,ax_float: Matplot values of figure and axes
 
-        """
-# Only 2D arrays may be plotted, test if 1D data are passed to the routine
-        if data.ndim < 2:
-            _ = QtWidgets.QMessageBox.warning(
-                None, "Warning",
-                "Function plotFloating is not prepared for 1D plots",
-                QtWidgets.QMessageBox.Close, QtWidgets.QMessageBox.Close)
-            return False
-# Create figure
-        fig_float = newWindow(wtitle, sizeh, sizev)
-        fig_float.fig.tight_layout()
-# If 2D array is passed create single axis
-        if data.ndim == 2:
-            ax_float = fig_float.fig.subplots(1, 1)
-            data1 = np.copy(data)
-            bar_or = "vertical"
-#            anchor = 'E'
-            nticks = 10
-# If 3D array is passed create 2 or 3 axis depending on the shape of data
-        else:
-            ddx = x.max() - x.min()
-            ddy = y.max() - y.min()
-            data1 = data[:, :, 0]
-# If horizontal extension is > 1.5x vertical one, plot axes vertically one
-#    above the next. If not plot axis in horizontal direction
-            if data.shape[2] == 3:
-                facx = sizeh / (3 * ddx)
-                facy = sizev / (3 * ddy)
-                if facx < facy:
-                    ax_float = fig_float.fig.subplots(3, 1)
-                    bar_or = "vertical"
-#                    anchor = 'E'
-                    nticks = 10
-                else:
-                    ax_float = fig_float.fig.subplots(1, 3)
-                    bar_or = "horizontal"
-#                    anchor = 'S'
-                    nticks = 6
-            else:
-                facx = sizeh / (2 * ddx)
-                facy = sizev / (2 * ddy)
-                if facx < facy:
-                    ax_float = fig_float.fig.subplots(2, 1)
-                    bar_or = "vertical"
-#                    anchor = 'E'
-                    nticks = 10
-                else:
-                    ax_float = fig_float.fig.subplots(1, 2)
-                    bar_or = "horizontal"
-#                    anchor = 'S'
-                    nticks = 6
-# Calculate color scale for both sensors independently
-        rd = int(np.ceil(-np.log10(np.nanmax(abs(data1))))) + 2
-        if mincol == maxcol:
-            if percent > 0:
-                max_col = np.round(np.nanquantile(data1, 1 - percent), rd)
-                min_col = np.round(np.nanquantile(data1, percent), rd)
-            else:
-                max_col = np.nanmax(data1)
-                min_col = np.nanmin(data1)
-        else:
-            max_col = maxcol
-            min_col = mincol
-# Plot first into axis ax_float[0]
-        try:
-            ax = ax_float[0]
-            pt = ptitle[0]
-            xl = xlabel[0]
-            yl = ylabel[0]
-            cl = clabel[0]
-# If only one subplot has been created
-        except TypeError:
-            ax = ax_float
-            pt = ptitle
-            xl = xlabel
-            yl = ylabel
-            cl = clabel
-        dx2 = (x[1] - x[0]) / 2
-        dy2 = (y[1] - y[0]) / 2
-        im1 = ax.imshow(np.flip(data1, axis=0), cmap=c, aspect="equal",
-                        extent=[np.min(x)-dx2, np.max(x)+dx2, np.min(y)-dy2,
-                                np.max(y) + dy2], vmin=min_col, vmax=max_col)
-        ax.set_title(pt)
-        ax.set_xlabel(xl)
-        ax.set_ylabel(yl)
-        if bar_or == "vertical":
-            cax = ax.inset_axes([1.015, 0.05, 0.015, 0.9],
-                                transform=ax.transAxes)
-        else:
-            cax = ax.inset_axes([0.05, -0.15, 0.9, 0.05],
-                                transform=ax.transAxes)
-        smin = np.round(np.nanmin(data1), rd)
-        smax = np.round(np.nanmax(data1), rd)
-        ssmin = min_col
-        ssmax = max_col
-        ds = (ssmax - ssmin) / nticks
-        ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
-        ticks = list(ticks)
-#        cbar = plt.colorbar(
-        cbar = fig_float.fig.colorbar(
-            im1, orientation=bar_or, ax=ax, cax=cax, fraction=0.1,
-            extend="both", ticks=ticks)
-        if bar_or == "vertical":
-            cbar.ax.set_ylabel(cl)
-            cbar.ax.text(0.0, -0.075, f"{smin}", verticalalignment="top",
-                         horizontalalignment="left",
-                         transform=cbar.ax.transAxes)
-            cbar.ax.text(0.0, 1.075, f"{smax}", verticalalignment="bottom",
-                         horizontalalignment="left",
-                         transform=cbar.ax.transAxes)
-        else:
-            cbar.ax.set_xlabel(cl)
-            cbar.ax.text(0.0, 1.0, f"{smin}", verticalalignment="bottom",
-                         horizontalalignment="right",
-                         transform=cbar.ax.transAxes,)
-            cbar.ax.text(1.0, 1.0, f"{smax}", verticalalignment="bottom",
-                         horizontalalignment="left",
-                         transform=cbar.ax.transAxes)
-        if self.grid_flag:
-            ax.grid(visible=True)
-        #        ax.set_aspect('equal', adjustable='box', anchor=anchor)
-        ax.set_aspect("equal", adjustable="box")
-# If more than one map has to be plotted, do this now
-        if data.ndim > 2:
-            if data.shape[2] > 1:
-                data1 = data[:, :, 1]
-                rd = int(np.ceil(-np.log10(np.nanmax(abs(data1))))) + 2
-                if mincol == maxcol:
-                    if percent > 0:
-                        max_col = np.round(np.nanquantile(data1, 1 - percent),
-                                           rd)
-                        min_col = np.round(np.nanquantile(data1, percent), rd)
-                    else:
-                        max_col = np.nanmax(data1)
-                        min_col = np.nanmin(data1)
-                else:
-                    max_col = maxcol
-                    min_col = mincol
-                im1 = ax_float[1].imshow(np.flip(data1, axis=0), cmap=c,
-                                         aspect="equal",
-                                         extent=[np.min(x)-dx2, np.max(x)+dx2,
-                                                 np.min(y)-dy2, np.max(y)+dy2],
-                                         vmin=min_col, vmax=max_col)
-                ax_float[1].set_title(ptitle[1])
-                ax_float[1].set_xlabel(xlabel[1])
-                ax_float[1].set_ylabel(ylabel[1])
-                if self.grid_flag:
-                    ax_float[1].grid(visible=True)
-                if bar_or == "vertical":
-                    cax = ax_float[1].inset_axes(
-                        [1.015, 0.05, 0.015, 0.9],
-                        transform=ax_float[1].transAxes)
-                else:
-                    cax = ax_float[1].inset_axes(
-                        [0.05, -0.15, 0.9, 0.05],
-                        transform=ax_float[1].transAxes)
-                smin = np.round(np.nanmin(data1), rd)
-                smax = np.round(np.nanmax(data1), rd)
-                ssmin = min_col
-                ssmax = max_col
-                ds = (ssmax - ssmin) / nticks
-                ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
-                ticks = list(ticks)
-#                cbar = plt.colorbar(
-                cbar = fig_float.fig.colorbar(im1, orientation=bar_or, ax=ax,
-                                              cax=cax, fraction=0.1,
-                                              extend="both", ticks=ticks)
-                if bar_or == "vertical":
-                    cbar.ax.set_ylabel(clabel[1])
-                    cbar.ax.text(0.0, -0.075, f"{smin}",
-                                 verticalalignment="top",
-                                 horizontalalignment="left",
-                                 transform=cbar.ax.transAxes)
-                    cbar.ax.text(0.0, 1.075, f"{smax}",
-                                 verticalalignment="bottom",
-                                 horizontalalignment="left",
-                                 transform=cbar.ax.transAxes)
-                else:
-                    cbar.ax.set_xlabel(clabel[1])
-                    cbar.ax.text(0.0, 1.0, f"{smin}",
-                                 verticalalignment="bottom",
-                                 horizontalalignment="right",
-                                 transform=cbar.ax.transAxes)
-                    cbar.ax.text(1.0, 1.0, f"{smax}",
-                                 verticalalignment="bottom",
-                                 horizontalalignment="left",
-                                 transform=cbar.ax.transAxes)
-#                ax_float[1].set_aspect('equal', adjustable='box',
-#                                       anchor=anchor)
-                ax_float[1].set_aspect("equal", adjustable="box")
-                if data.shape[2] > 2:
-                    data1 = data[:, :, 2]
-                    rd = int(np.ceil(-np.log10(np.nanmax(abs(data1))))) + 2
-                    if mincol == maxcol:
-                        if percent > 0:
-                            max_col = np.round(
-                                np.nanquantile(data1, 1 - percent), rd)
-                            min_col = np.round(
-                                np.nanquantile(data1, percent), rd)
-                        else:
-                            max_col = np.nanmax(data1)
-                            min_col = np.nanmin(data1)
-                    else:
-                        max_col = maxcol
-                        min_col = mincol
-                    im1 = ax_float[2].imshow(np.flip(
-                        data1, axis=0), cmap=c, aspect="equal",
-                        extent=[np.min(x)-dx2, np.max(x)+dx2,
-                                np.min(y)-dy2, np.max(y)+dy2],
-                        vmin=min_col, vmax=max_col)
-                    ax_float[2].set_title(ptitle[2])
-                    ax_float[2].set_xlabel(xlabel[2])
-                    ax_float[2].set_ylabel(ylabel[2])
-                    if self.grid_flag:
-                        ax_float[2].grid(visible=True)
-                    if bar_or == "vertical":
-                        cax = ax_float[2].inset_axes(
-                            [1.015, 0.05, 0.015, 0.9],
-                            transform=ax_float[2].transAxes)
-                    else:
-                        cax = ax_float[2].inset_axes(
-                            [0.05, -0.15, 0.9, 0.05],
-                            transform=ax_float[2].transAxes)
-                    smin = np.round(np.nanmin(data1), rd)
-                    smax = np.round(np.nanmax(data1), rd)
-                    ssmin = min_col
-                    ssmax = max_col
-                    ds = (ssmax - ssmin) / nticks
-                    ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
-                    ticks = list(ticks)
-#                    cbar = plt.colorbar(
-                    cbar = fig_float.fig.colorbar(im1, orientation=bar_or,
-                                                  ax=ax, cax=cax, fraction=0.1,
-                                                  extend="both", ticks=ticks)
-                    if bar_or == "vertical":
-                        cbar.ax.set_ylabel(clabel[2])
-                        cbar.ax.text(0.0, -0.075, f"{smin}",
-                                     verticalalignment="top",
-                                     horizontalalignment="left",
-                                     transform=cbar.ax.transAxes)
-                        cbar.ax.text(0.0, 1.075, f"{smax}",
-                                     verticalalignment="bottom",
-                                     horizontalalignment="left",
-                                     transform=cbar.ax.transAxes)
-                    else:
-                        cbar.ax.set_xlabel(clabel[2])
-                        cbar.ax.text(0.0, 1.0, f"{smin}",
-                                     verticalalignment="bottom",
-                                     horizontalalignment="right",
-                                     transform=cbar.ax.transAxes)
-                        cbar.ax.text(1.0, 1.0, f"{smax}",
-                                     verticalalignment="bottom",
-                                     horizontalalignment="left",
-                                     transform=cbar.ax.transAxes)
-                    #       ax_float[2].set_aspect('equal', adjustable='box',
-                    #                              anchor=anchor)
-                    ax_float[2].set_aspect("equal", adjustable="box")
-        fig_float.show()
-        return fig_float, ax_float
+#         """
+# # Only 2D arrays may be plotted, test if 1D data are passed to the routine
+#         if data.ndim < 2:
+#             _ = QtWidgets.QMessageBox.warning(
+#                 None, "Warning",
+#                 "Function plotFloating is not prepared for 1D plots",
+#                 QtWidgets.QMessageBox.Close, QtWidgets.QMessageBox.Close)
+#             return False
+# # Create figure
+#         fig_float = newWindow(wtitle, sizeh, sizev)
+#         fig_float.fig.tight_layout()
+# # If 2D array is passed create single axis
+#         if data.ndim == 2:
+#             ax_float = fig_float.fig.subplots(1, 1)
+#             data1 = np.copy(data)
+#             bar_or = "vertical"
+# #            anchor = 'E'
+#             nticks = 10
+# # If 3D array is passed create 2 or 3 axis depending on the shape of data
+#         else:
+#             ddx = x.max() - x.min()
+#             ddy = y.max() - y.min()
+#             data1 = data[:, :, 0]
+# # If horizontal extension is > 1.5x vertical one, plot axes vertically one
+# #    above the next. If not plot axis in horizontal direction
+#             if data.shape[2] == 3:
+#                 facx = sizeh / (3 * ddx)
+#                 facy = sizev / (3 * ddy)
+#                 if facx < facy:
+#                     ax_float = fig_float.fig.subplots(3, 1)
+#                     bar_or = "vertical"
+# #                    anchor = 'E'
+#                     nticks = 10
+#                 else:
+#                     ax_float = fig_float.fig.subplots(1, 3)
+#                     bar_or = "horizontal"
+# #                    anchor = 'S'
+#                     nticks = 6
+#             else:
+#                 facx = sizeh / (2 * ddx)
+#                 facy = sizev / (2 * ddy)
+#                 if facx < facy:
+#                     ax_float = fig_float.fig.subplots(2, 1)
+#                     bar_or = "vertical"
+# #                    anchor = 'E'
+#                     nticks = 10
+#                 else:
+#                     ax_float = fig_float.fig.subplots(1, 2)
+#                     bar_or = "horizontal"
+# #                    anchor = 'S'
+#                     nticks = 6
+# # Calculate color scale for both sensors independently
+#         rd = int(np.ceil(-np.log10(np.nanmax(abs(data1))))) + 2
+#         if mincol == maxcol:
+#             if percent > 0:
+#                 max_col = np.round(np.nanquantile(data1, 1 - percent), rd)
+#                 min_col = np.round(np.nanquantile(data1, percent), rd)
+#             else:
+#                 max_col = np.nanmax(data1)
+#                 min_col = np.nanmin(data1)
+#         else:
+#             max_col = maxcol
+#             min_col = mincol
+# # Plot first into axis ax_float[0]
+#         try:
+#             ax = ax_float[0]
+#             pt = ptitle[0]
+#             xl = xlabel[0]
+#             yl = ylabel[0]
+#             cl = clabel[0]
+# # If only one subplot has been created
+#         except TypeError:
+#             ax = ax_float
+#             pt = ptitle
+#             xl = xlabel
+#             yl = ylabel
+#             cl = clabel
+#         dx2 = (x[1] - x[0]) / 2
+#         dy2 = (y[1] - y[0]) / 2
+#         im1 = ax.imshow(np.flip(data1, axis=0), cmap=c, aspect="equal",
+#                         extent=[np.min(x)-dx2, np.max(x)+dx2, np.min(y)-dy2,
+#                                 np.max(y) + dy2], vmin=min_col, vmax=max_col)
+#         ax.set_title(pt)
+#         ax.set_xlabel(xl)
+#         ax.set_ylabel(yl)
+#         if bar_or == "vertical":
+#             cax = ax.inset_axes([1.015, 0.05, 0.015, 0.9],
+#                                 transform=ax.transAxes)
+#         else:
+#             cax = ax.inset_axes([0.05, -0.15, 0.9, 0.05],
+#                                 transform=ax.transAxes)
+#         smin = np.round(np.nanmin(data1), rd)
+#         smax = np.round(np.nanmax(data1), rd)
+#         ssmin = min_col
+#         ssmax = max_col
+#         ds = (ssmax - ssmin) / nticks
+#         ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
+#         ticks = list(ticks)
+# #        cbar = plt.colorbar(
+#         cbar = fig_float.fig.colorbar(
+#             im1, orientation=bar_or, ax=ax, cax=cax, fraction=0.1,
+#             extend="both", ticks=ticks)
+#         if bar_or == "vertical":
+#             cbar.ax.set_ylabel(cl)
+#             cbar.ax.text(0.0, -0.075, f"{smin}", verticalalignment="top",
+#                          horizontalalignment="left",
+#                          transform=cbar.ax.transAxes)
+#             cbar.ax.text(0.0, 1.075, f"{smax}", verticalalignment="bottom",
+#                          horizontalalignment="left",
+#                          transform=cbar.ax.transAxes)
+#         else:
+#             cbar.ax.set_xlabel(cl)
+#             cbar.ax.text(0.0, 1.0, f"{smin}", verticalalignment="bottom",
+#                          horizontalalignment="right",
+#                          transform=cbar.ax.transAxes,)
+#             cbar.ax.text(1.0, 1.0, f"{smax}", verticalalignment="bottom",
+#                          horizontalalignment="left",
+#                          transform=cbar.ax.transAxes)
+#         if self.grid_flag:
+#             ax.grid(visible=True)
+#         #        ax.set_aspect('equal', adjustable='box', anchor=anchor)
+#         ax.set_aspect("equal", adjustable="box")
+# # If more than one map has to be plotted, do this now
+#         if data.ndim > 2:
+#             if data.shape[2] > 1:
+#                 data1 = data[:, :, 1]
+#                 rd = int(np.ceil(-np.log10(np.nanmax(abs(data1))))) + 2
+#                 if mincol == maxcol:
+#                     if percent > 0:
+#                         max_col = np.round(np.nanquantile(data1, 1 - percent),
+#                                            rd)
+#                         min_col = np.round(np.nanquantile(data1, percent), rd)
+#                     else:
+#                         max_col = np.nanmax(data1)
+#                         min_col = np.nanmin(data1)
+#                 else:
+#                     max_col = maxcol
+#                     min_col = mincol
+#                 im1 = ax_float[1].imshow(np.flip(data1, axis=0), cmap=c,
+#                                          aspect="equal",
+#                                          extent=[np.min(x)-dx2, np.max(x)+dx2,
+#                                                  np.min(y)-dy2, np.max(y)+dy2],
+#                                          vmin=min_col, vmax=max_col)
+#                 ax_float[1].set_title(ptitle[1])
+#                 ax_float[1].set_xlabel(xlabel[1])
+#                 ax_float[1].set_ylabel(ylabel[1])
+#                 if self.grid_flag:
+#                     ax_float[1].grid(visible=True)
+#                 if bar_or == "vertical":
+#                     cax = ax_float[1].inset_axes(
+#                         [1.015, 0.05, 0.015, 0.9],
+#                         transform=ax_float[1].transAxes)
+#                 else:
+#                     cax = ax_float[1].inset_axes(
+#                         [0.05, -0.15, 0.9, 0.05],
+#                         transform=ax_float[1].transAxes)
+#                 smin = np.round(np.nanmin(data1), rd)
+#                 smax = np.round(np.nanmax(data1), rd)
+#                 ssmin = min_col
+#                 ssmax = max_col
+#                 ds = (ssmax - ssmin) / nticks
+#                 ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
+#                 ticks = list(ticks)
+# #                cbar = plt.colorbar(
+#                 cbar = fig_float.fig.colorbar(im1, orientation=bar_or, ax=ax,
+#                                               cax=cax, fraction=0.1,
+#                                               extend="both", ticks=ticks)
+#                 if bar_or == "vertical":
+#                     cbar.ax.set_ylabel(clabel[1])
+#                     cbar.ax.text(0.0, -0.075, f"{smin}",
+#                                  verticalalignment="top",
+#                                  horizontalalignment="left",
+#                                  transform=cbar.ax.transAxes)
+#                     cbar.ax.text(0.0, 1.075, f"{smax}",
+#                                  verticalalignment="bottom",
+#                                  horizontalalignment="left",
+#                                  transform=cbar.ax.transAxes)
+#                 else:
+#                     cbar.ax.set_xlabel(clabel[1])
+#                     cbar.ax.text(0.0, 1.0, f"{smin}",
+#                                  verticalalignment="bottom",
+#                                  horizontalalignment="right",
+#                                  transform=cbar.ax.transAxes)
+#                     cbar.ax.text(1.0, 1.0, f"{smax}",
+#                                  verticalalignment="bottom",
+#                                  horizontalalignment="left",
+#                                  transform=cbar.ax.transAxes)
+# #                ax_float[1].set_aspect('equal', adjustable='box',
+# #                                       anchor=anchor)
+#                 ax_float[1].set_aspect("equal", adjustable="box")
+#                 if data.shape[2] > 2:
+#                     data1 = data[:, :, 2]
+#                     rd = int(np.ceil(-np.log10(np.nanmax(abs(data1))))) + 2
+#                     if mincol == maxcol:
+#                         if percent > 0:
+#                             max_col = np.round(
+#                                 np.nanquantile(data1, 1 - percent), rd)
+#                             min_col = np.round(
+#                                 np.nanquantile(data1, percent), rd)
+#                         else:
+#                             max_col = np.nanmax(data1)
+#                             min_col = np.nanmin(data1)
+#                     else:
+#                         max_col = maxcol
+#                         min_col = mincol
+#                     im1 = ax_float[2].imshow(np.flip(
+#                         data1, axis=0), cmap=c, aspect="equal",
+#                         extent=[np.min(x)-dx2, np.max(x)+dx2,
+#                                 np.min(y)-dy2, np.max(y)+dy2],
+#                         vmin=min_col, vmax=max_col)
+#                     ax_float[2].set_title(ptitle[2])
+#                     ax_float[2].set_xlabel(xlabel[2])
+#                     ax_float[2].set_ylabel(ylabel[2])
+#                     if self.grid_flag:
+#                         ax_float[2].grid(visible=True)
+#                     if bar_or == "vertical":
+#                         cax = ax_float[2].inset_axes(
+#                             [1.015, 0.05, 0.015, 0.9],
+#                             transform=ax_float[2].transAxes)
+#                     else:
+#                         cax = ax_float[2].inset_axes(
+#                             [0.05, -0.15, 0.9, 0.05],
+#                             transform=ax_float[2].transAxes)
+#                     smin = np.round(np.nanmin(data1), rd)
+#                     smax = np.round(np.nanmax(data1), rd)
+#                     ssmin = min_col
+#                     ssmax = max_col
+#                     ds = (ssmax - ssmin) / nticks
+#                     ticks = np.round(np.arange(ssmin, ssmax + ds / 2, ds), rd)
+#                     ticks = list(ticks)
+# #                    cbar = plt.colorbar(
+#                     cbar = fig_float.fig.colorbar(im1, orientation=bar_or,
+#                                                   ax=ax, cax=cax, fraction=0.1,
+#                                                   extend="both", ticks=ticks)
+#                     if bar_or == "vertical":
+#                         cbar.ax.set_ylabel(clabel[2])
+#                         cbar.ax.text(0.0, -0.075, f"{smin}",
+#                                      verticalalignment="top",
+#                                      horizontalalignment="left",
+#                                      transform=cbar.ax.transAxes)
+#                         cbar.ax.text(0.0, 1.075, f"{smax}",
+#                                      verticalalignment="bottom",
+#                                      horizontalalignment="left",
+#                                      transform=cbar.ax.transAxes)
+#                     else:
+#                         cbar.ax.set_xlabel(clabel[2])
+#                         cbar.ax.text(0.0, 1.0, f"{smin}",
+#                                      verticalalignment="bottom",
+#                                      horizontalalignment="right",
+#                                      transform=cbar.ax.transAxes)
+#                         cbar.ax.text(1.0, 1.0, f"{smax}",
+#                                      verticalalignment="bottom",
+#                                      horizontalalignment="left",
+#                                      transform=cbar.ax.transAxes)
+#                     #       ax_float[2].set_aspect('equal', adjustable='box',
+#                     #                              anchor=anchor)
+#                     ax_float[2].set_aspect("equal", adjustable="box")
+#         fig_float.show()
+#         return fig_float, ax_float
 
     def get_mouse_click(self, fig):
         """
